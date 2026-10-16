@@ -1,0 +1,7 @@
+* text=auto eol=lf
+
+*.cmd text eol=crlf
+mvnw text eol=lf
+*.p12 binary
+*.pem text eol=lf
+*.jar binary

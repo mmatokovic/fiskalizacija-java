@@ -1,0 +1,10 @@
+target/
+
+.idea/
+*.iml
+
+.vscode/
+
+*.p12
+
+!fiskalizacija2-core/src/test/resources/test-potpis.p12
