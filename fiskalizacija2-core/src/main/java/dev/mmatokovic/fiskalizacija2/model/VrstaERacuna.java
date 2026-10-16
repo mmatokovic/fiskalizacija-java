@@ -1,0 +1,24 @@
+package dev.mmatokovic.fiskalizacija2.model;
+
+/** Smjer eRačuna u poruci {@code EvidentirajERacun}. */
+public enum VrstaERacuna {
+    /** Izdani eRačun, evidentira ga izdavatelj. */
+    IZLAZNI("I"),
+    /** Primljeni eRačun, evidentira ga primatelj. */
+    ULAZNI("U");
+
+    private final String oznaka;
+
+    VrstaERacuna(String oznaka) {
+        this.oznaka = oznaka;
+    }
+
+    /**
+     * Oznaka vrste u poruci.
+     *
+     * @return oznaka u poruci: {@code I} ili {@code U}
+     */
+    public String oznaka() {
+        return oznaka;
+    }
+}
