@@ -1,0 +1,34 @@
+package dev.mmatokovic.fiskalizacija2;
+
+/**
+ * Provjera OIB-a: 11 znamenki, od kojih je zadnja kontrolna (ISO 7064, MOD 11,10).
+ *
+ * <p>Library je primjenjuje samo kad zna da je vrijednost hrvatski OIB (npr. {@code CompanyID} s prefiksom HR).
+ * Polje {@code oibPorezniBroj} može sadržavati i strani porezni broj, pa se ono pri slanju ne provjerava.
+ */
+public final class Oib {
+
+    private Oib() {
+    }
+
+    /**
+     * Provjerava format i kontrolnu znamenku.
+     *
+     * @param oib vrijednost koja se provjerava
+     * @return je li vrijednost ispravan OIB
+     */
+    public static boolean ispravan(String oib) {
+        if (oib == null || !oib.matches("\\d{11}")) {
+            return false;
+        }
+        int ostatak = 10;
+        for (int i = 0; i < 10; i++) {
+            ostatak = (ostatak + (oib.charAt(i) - '0')) % 10;
+            if (ostatak == 0) {
+                ostatak = 10;
+            }
+            ostatak = (ostatak * 2) % 11;
+        }
+        return (11 - ostatak) % 10 == oib.charAt(10) - '0';
+    }
+}
