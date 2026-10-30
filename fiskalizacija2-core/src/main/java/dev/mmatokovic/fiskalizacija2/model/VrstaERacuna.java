@@ -13,11 +13,6 @@ public enum VrstaERacuna {
         this.oznaka = oznaka;
     }
 
-    /**
-     * Oznaka vrste u poruci.
-     *
-     * @return oznaka u poruci: {@code I} ili {@code U}
-     */
     public String oznaka() {
         return oznaka;
     }

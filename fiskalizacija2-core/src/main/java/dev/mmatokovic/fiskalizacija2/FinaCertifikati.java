@@ -27,12 +27,7 @@ public final class FinaCertifikati {
     private FinaCertifikati() {
     }
 
-    /**
-     * Korijenski FINA CA certifikati.
-     *
-     * @param okruzenje okruženje
-     * @return korijenski FINA CA certifikati kojima se vjeruje u tom okruženju
-     */
+    /** Korijenski FINA CA certifikati kojima se vjeruje u zadanom okruženju. */
     public static Set<TrustAnchor> sidra(Okruzenje okruzenje) {
         var korijeni = new ArrayList<>(PRODUKCIJA_KORIJENI);
         if (okruzenje == Okruzenje.TEST) {
@@ -41,12 +36,7 @@ public final class FinaCertifikati {
         return korijeni.stream().map(c -> new TrustAnchor(c, null)).collect(Collectors.toUnmodifiableSet());
     }
 
-    /**
-     * Posrednički FINA CA certifikati.
-     *
-     * @param okruzenje okruženje
-     * @return posrednički FINA CA certifikati za izgradnju lanca u tom okruženju
-     */
+    /** Posrednički FINA CA certifikati za izgradnju lanca u zadanom okruženju. */
     public static List<X509Certificate> posrednici(Okruzenje okruzenje) {
         var posrednici = new ArrayList<>(PRODUKCIJA_POSREDNICI);
         if (okruzenje == Okruzenje.TEST) {
@@ -55,12 +45,7 @@ public final class FinaCertifikati {
         return List.copyOf(posrednici);
     }
 
-    /**
-     * TLS kontekst koji vjeruje FINA lancu; Java default truststore FINA certifikate u pravilu nema.
-     *
-     * @param okruzenje okruženje
-     * @return novi TLS kontekst
-     */
+    /** TLS kontekst koji vjeruje FINA lancu; Java default truststore FINA certifikate u pravilu nema. */
     public static SSLContext sslContext(Okruzenje okruzenje) {
         try {
             var ks = KeyStore.getInstance(KeyStore.getDefaultType());

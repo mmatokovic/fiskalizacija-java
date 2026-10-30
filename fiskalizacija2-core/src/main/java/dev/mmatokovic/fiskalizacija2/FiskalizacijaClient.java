@@ -60,13 +60,7 @@ public final class FiskalizacijaClient {
         this.http = HttpClient.newBuilder().sslContext(b.ssl).connectTimeout(b.timeout).build();
     }
 
-    /**
-     * Novi builder klijenta.
-     *
-     * @param okruzenje  okruženje; određuje adresu servisa i povjerljive FINA certifikate
-     * @param potpisivac aplikacijski certifikat kojim se potpisuju zahtjevi
-     * @return builder s preporučenim zadanim postavkama
-     */
+    /** Okruženje određuje adresu servisa i povjerljive FINA certifikate; {@code potpisivac} potpisuje zahtjeve. */
     public static Builder builder(Okruzenje okruzenje, Potpisivac potpisivac) {
         return new Builder(Objects.requireNonNull(okruzenje, "okruzenje"), Objects.requireNonNull(potpisivac, "potpisivac"));
     }
@@ -262,23 +256,13 @@ public final class FiskalizacijaClient {
             this.ssl = FinaCertifikati.sslContext(okruzenje);
         }
 
-        /**
-         * Za proxy ili gateway ispred servisa Porezne uprave.
-         *
-         * @param adresa adresa servisa umjesto {@link Okruzenje#adresa()}
-         * @return ovaj builder
-         */
+        /** Za proxy ili gateway ispred servisa Porezne uprave. */
         public Builder adresa(URI adresa) {
             this.adresa = Objects.requireNonNull(adresa, "adresa");
             return this;
         }
 
-        /**
-         * Najdulje čekanje na spajanje i na odgovor.
-         *
-         * @param timeout najdulje čekanje na spajanje i na odgovor; zadano 30 sekundi
-         * @return ovaj builder
-         */
+        /** Najdulje čekanje na spajanje i na odgovor; zadano 30 sekundi. */
         public Builder timeout(Duration timeout) {
             Objects.requireNonNull(timeout, "timeout");
             if (timeout.isNegative() || timeout.isZero()) {
@@ -288,57 +272,31 @@ public final class FiskalizacijaClient {
             return this;
         }
 
-        /**
-         * Uključeno po defaultu: neispravna poruka se ne šalje nego baca {@link NeispravanZahtjevException}.
-         *
-         * @param ukljuceno validirati poruku prema XSD shemi prije slanja
-         * @return ovaj builder
-         */
+        /** Uključeno po defaultu: neispravna poruka se ne šalje nego baca {@link NeispravanZahtjevException}. */
         public Builder xsdValidacija(boolean ukljuceno) {
             this.xsdValidacija = ukljuceno;
             return this;
         }
 
-        /**
-         * TLS kontekst za spajanje na servis.
-         *
-         * @param ssl TLS kontekst umjesto zadanog, koji vjeruje FINA lancu ({@link FinaCertifikati#sslContext(Okruzenje)})
-         * @return ovaj builder
-         */
+        /** Umjesto zadanog konteksta, koji vjeruje FINA lancu ({@link FinaCertifikati#sslContext(Okruzenje)}). */
         public Builder sslContext(SSLContext ssl) {
             this.ssl = Objects.requireNonNull(ssl, "ssl");
             return this;
         }
 
-        /**
-         * Povjerljivi CA za provjeru potpisa odgovora, umjesto ugrađenih FINA certifikata.
-         *
-         * @param sidra      korijenski certifikati
-         * @param posrednici posrednički certifikati za izgradnju lanca
-         * @return ovaj builder
-         */
+        /** Povjerljivi CA za provjeru potpisa odgovora, umjesto ugrađenih FINA certifikata. */
         public Builder povjerljiviCertifikati(Set<TrustAnchor> sidra, List<X509Certificate> posrednici) {
             this.sidra = Set.copyOf(sidra);
             this.posrednici = List.copyOf(posrednici);
             return this;
         }
 
-        /**
-         * Sat za {@code datumVrijemeSlanja}; korisno u testovima.
-         *
-         * @param sat sat u zoni Europe/Zagreb; {@code datumVrijemeSlanja} se piše u lokalnom vremenu
-         * @return ovaj builder
-         */
+        /** Sat u zoni Europe/Zagreb za {@code datumVrijemeSlanja}; korisno u testovima. */
         public Builder sat(Clock sat) {
             this.sat = Objects.requireNonNull(sat, "sat");
             return this;
         }
 
-        /**
-         * Gradi klijent.
-         *
-         * @return novi klijent; thread-safe
-         */
         public FiskalizacijaClient build() {
             return new FiskalizacijaClient(this);
         }

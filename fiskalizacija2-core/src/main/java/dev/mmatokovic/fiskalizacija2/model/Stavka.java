@@ -35,7 +35,6 @@ public record Stavka(
         String artiklHrOznakaKategorijaPdv,
         List<KlasifikacijaArtikla> klasifikacije) {
 
-    /** Liste se kopiraju u nepromjenjive. */
     public Stavka {
         klasifikacije = List.copyOf(klasifikacije);
     }

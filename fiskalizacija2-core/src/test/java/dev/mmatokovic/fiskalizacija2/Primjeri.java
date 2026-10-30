@@ -12,10 +12,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 
-/** Pristup službenim primjerima Porezne uprave i testnom certifikatu. */
 public final class Primjeri {
 
-    /** Ispravan OIB za testove. */
     public static final String OIB = "12345678903";
 
     public static final Clock SAT = Clock.fixed(Instant.parse("2026-03-02T09:30:15.123Z"), ZoneId.of("Europe/Zagreb"));

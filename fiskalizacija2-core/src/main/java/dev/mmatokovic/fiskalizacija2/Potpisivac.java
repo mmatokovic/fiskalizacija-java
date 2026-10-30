@@ -40,12 +40,7 @@ public final class Potpisivac {
     private final X509Certificate certifikat;
     private final Clock sat;
 
-    /**
-     * Potpisivač iz već učitanog ključa i certifikata, npr. iz HSM-a ili vlastitog keystorea.
-     *
-     * @param kljuc      privatni ključ aplikacijskog certifikata (RSA ili EC)
-     * @param certifikat aplikacijski certifikat
-     */
+    /** Za ključ iz HSM-a ili vlastitog keystorea; RSA ili EC. */
     public Potpisivac(PrivateKey kljuc, X509Certificate certifikat) {
         this(kljuc, certifikat, Clock.systemUTC());
     }
@@ -95,11 +90,6 @@ public final class Potpisivac {
         }
     }
 
-    /**
-     * Certifikat koji se šalje u potpisu.
-     *
-     * @return aplikacijski certifikat kojim se potpisuje
-     */
     public X509Certificate certifikat() {
         return certifikat;
     }

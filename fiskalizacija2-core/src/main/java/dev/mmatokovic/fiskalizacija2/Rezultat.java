@@ -21,20 +21,11 @@ public record Rezultat(
         String soapZahtjev,
         String soapOdgovor) {
 
-    /**
-     * Ishod provjere potpisa odgovora treba provjeriti zasebno, kroz {@link #potpisOdgovora()}.
-     *
-     * @return je li zahtjev prihvaćen, bez greške
-     */
+    /** Prihvaćen bez greške. Potpis odgovora provjerite zasebno, kroz {@link #potpisOdgovora()}. */
     public boolean prihvacen() {
         return odgovor.prihvacenZahtjev() && odgovor.greska() == null;
     }
 
-    /**
-     * Greška iz odgovora.
-     *
-     * @return greška iz odgovora, ili {@code null} ako je zahtjev prihvaćen
-     */
     public Greska greska() {
         return odgovor.greska();
     }

@@ -6,7 +6,6 @@ import java.net.URI;
 public enum Okruzenje {
     /** Testno okruženje; vjeruje i FINA demo certifikatima. */
     TEST(URI.create("https://cis.porezna-uprava.hr:8511/FiskalizacijaService")),
-    /** Produkcijsko okruženje. */
     PRODUKCIJA(URI.create("https://cis.porezna-uprava.hr:8509/FiskalizacijaService"));
 
     private final URI adresa;
@@ -15,11 +14,6 @@ public enum Okruzenje {
         this.adresa = adresa;
     }
 
-    /**
-     * Adresa servisa za eFiskalizaciju i eIzvještavanje.
-     *
-     * @return adresa servisa
-     */
     public URI adresa() {
         return adresa;
     }

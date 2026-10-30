@@ -49,7 +49,6 @@ public record Racun(
         List<Stavka> stavke,
         boolean indikatorKopije) {
 
-    /** Liste se kopiraju u nepromjenjive. */
     public Racun {
         prethodniRacuni = List.copyOf(prethodniRacuni);
         prijenosiSredstava = List.copyOf(prijenosiSredstava);

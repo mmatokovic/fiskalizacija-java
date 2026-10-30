@@ -239,7 +239,6 @@ public final class UblParser {
         }
     }
 
-    /** Drži XPath i listu grešaka kroz jedno čitanje dokumenta. */
     private static final class Citac {
 
         private final XPath xp = XPathFactory.newInstance().newXPath();

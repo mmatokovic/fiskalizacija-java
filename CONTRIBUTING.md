@@ -15,7 +15,7 @@ Only JDK 17+ is required; the wrapper downloads Maven. Unit tests need no networ
 - `fiskalizacija2-core` must have no external dependencies, only the JDK.
 - The public API is `dev.mmatokovic.fiskalizacija2` and `dev.mmatokovic.fiskalizacija2.model`. Everything else goes in
   `dev.mmatokovic.fiskalizacija2.internal`, which `module-info.java` does not export.
-- Every public type and member needs javadoc; the build runs doclint with all checks enabled.
+- Write javadoc where it tells the reader something the signature does not. Doclint checks syntax and references.
 - Domain names (classes, fields, methods) stay in Croatian and follow the official XSD and specification terms.
 - Every behaviour change comes with a test, preferably against an official Porezna uprava example in
   `src/test/resources/primjeri`.
