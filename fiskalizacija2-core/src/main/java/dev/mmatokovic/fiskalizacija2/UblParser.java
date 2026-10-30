@@ -100,114 +100,15 @@ public final class UblParser {
             throw new UblException(List.of("Dokument ne sadrži UBL Invoice ni CreditNote"));
         }
         boolean invoice = "Invoice".equals(root.getLocalName());
-        String linija = invoice ? "cac:InvoiceLine" : "cac:CreditNoteLine";
-        String kolicina = invoice ? "cbc:InvoicedQuantity" : "cbc:CreditedQuantity";
-
-        var prethodni = c.cvorovi(root, "cac:BillingReference").stream()
-                .map(n -> new PrethodniRacun(
-                        c.obvezanTekst(n, "cac:InvoiceDocumentReference/cbc:ID", "BT-25 broj prethodnog računa"),
-                        c.datum(n, "cac:InvoiceDocumentReference/cbc:IssueDate", "BT-26 datum prethodnog računa", true)))
-                .toList();
-
-        var dobavljac = c.cvor(root, "cac:AccountingSupplierParty");
-        var kupac = c.cvor(root, "cac:AccountingCustomerParty");
-        if (dobavljac == null) {
-            greske.add("Nedostaje BG-4 prodavatelj (cac:AccountingSupplierParty)");
-        }
-        if (kupac == null) {
-            greske.add("Nedostaje BG-7 kupac (cac:AccountingCustomerParty)");
-        }
-        var izdavatelj = dobavljac == null ? null : new Izdavatelj(
-                c.obvezanTekst(dobavljac, "cac:Party/cac:PartyLegalEntity/cbc:RegistrationName", "BT-27 naziv prodavatelja"),
-                c.oib(dobavljac, "BT-31", "BT-34"),
-                c.oibOperatera(dobavljac));
-        var primatelj = kupac == null ? null : new Primatelj(
-                c.obvezanTekst(kupac, "cac:Party/cac:PartyLegalEntity/cbc:RegistrationName", "BT-44 naziv kupca"),
-                c.oib(kupac, "BT-48", "BT-49"));
-
-        var prijenosi = c.cvorovi(root, "cac:PaymentMeans/cac:PayeeFinancialAccount").stream()
-                .map(n -> new PrijenosSredstava(
-                        c.obvezanTekst(n, "cbc:ID", "BT-84 identifikator računa za plaćanje"),
-                        c.tekst(n, "cbc:Name"),
-                        c.tekst(n, "cac:FinancialInstitutionBranch/cbc:ID")))
-                .toList();
-
-        var pdv = c.broj(root, "cac:TaxTotal/cbc:TaxAmount", "BT-110 ukupni PDV", false);
-        var ukupno = new DokumentUkupanIznos(
-                c.broj(root, "cac:LegalMonetaryTotal/cbc:LineExtensionAmount", "BT-106 zbroj neto iznosa stavki", true),
-                c.broj(root, "cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount", "BT-107", false),
-                c.broj(root, "cac:LegalMonetaryTotal/cbc:ChargeTotalAmount", "BT-108", false),
-                c.broj(root, "cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount", "BT-109 iznos bez PDV-a", true),
-                pdv == null ? BigDecimal.ZERO : pdv,
-                c.broj(root, "cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount", "BT-112 iznos s PDV-om", true),
-                c.broj(root, "cac:LegalMonetaryTotal/cbc:PrepaidAmount", "BT-113", false),
-                c.broj(root, "cac:LegalMonetaryTotal/cbc:PayableAmount", "BT-115 iznos za plaćanje", true));
-
-        var hrRaspodjela = c.cvorovi(root, HR_TAX_SUBTOTAL);
-        var raspodjela = !hrRaspodjela.isEmpty()
-                ? hrRaspodjela.stream().map(n -> new RaspodjelaPdv(
-                        c.obvezanTekst(n, "hrextac:HRTaxCategory/cbc:ID", "HR-BT-18 kategorija PDV-a"),
-                        c.broj(n, "cbc:TaxableAmount", "HR-BT-16 oporezivi iznos", true),
-                        c.broj(n, "cbc:TaxAmount", "HR-BT-17 iznos poreza", true),
-                        c.broj(n, "hrextac:HRTaxCategory/cbc:Percent", "HR-BT-19 stopa", false),
-                        c.tekst(n, "hrextac:HRTaxCategory/cbc:TaxExemptionReasonCode"),
-                        c.tekst(n, "hrextac:HRTaxCategory/cbc:TaxExemptionReason"),
-                        c.tekst(n, "hrextac:HRTaxCategory/cbc:Name"))).toList()
-                : c.cvorovi(root, "cac:TaxTotal/cac:TaxSubtotal").stream().map(n -> new RaspodjelaPdv(
-                        c.obvezanTekst(n, "cac:TaxCategory/cbc:ID", "BT-118 kategorija PDV-a"),
-                        c.broj(n, "cbc:TaxableAmount", "BT-116 oporezivi iznos", true),
-                        c.broj(n, "cbc:TaxAmount", "BT-117 iznos poreza", true),
-                        c.broj(n, "cac:TaxCategory/cbc:Percent", "BT-119 stopa", false),
-                        c.tekst(n, "cac:TaxCategory/cbc:TaxExemptionReasonCode"),
-                        c.tekst(n, "cac:TaxCategory/cbc:TaxExemptionReason"),
-                        null)).toList();
-        if (raspodjela.isEmpty()) {
-            greske.add("Nedostaje raščlamba PDV-a (BG-23 ili HR-BG-2)");
-        }
-
-        var popusti = c.cvorovi(root, "cac:AllowanceCharge[normalize-space(cbc:ChargeIndicator)='false']").stream()
-                .map(n -> new DokumentPopust(
-                        c.broj(n, "cbc:Amount", "BT-92 iznos popusta", true),
-                        c.obvezanTekst(n, "cac:TaxCategory/cbc:ID", "BT-95 kategorija PDV-a popusta"),
-                        c.broj(n, "cac:TaxCategory/cbc:Percent", "BT-96", false),
-                        c.tekst(n, "cbc:AllowanceChargeReason"),
-                        c.tekst(n, "cbc:AllowanceChargeReasonCode")))
-                .toList();
-
-        var troskovi = c.cvorovi(root, "cac:AllowanceCharge[normalize-space(cbc:ChargeIndicator)='true']").stream()
-                .map(n -> new DokumentTrosak(
-                        c.broj(n, "cbc:Amount", "BT-99 iznos troška", true),
-                        c.obvezanTekst(n, "cac:TaxCategory/cbc:ID", "BT-102 kategorija PDV-a troška"),
-                        c.tekst(n, "cac:TaxCategory/cbc:Name"),
-                        c.broj(n, "cac:TaxCategory/cbc:Percent", "BT-103", false),
-                        c.tekst(n, "cac:TaxCategory/cbc:TaxExemptionReason"),
-                        c.tekst(n, "cac:TaxCategory/cbc:TaxExemptionReasonCode")))
-                .toList();
-
-        var stavke = c.cvorovi(root, linija).stream()
-                .map(n -> new Stavka(
-                        c.broj(n, kolicina, "BT-129 količina", true),
-                        c.obvezanTekst(n, kolicina + "/@unitCode", "BT-130 jedinica mjere"),
-                        c.broj(n, "cbc:LineExtensionAmount", "BT-131 neto iznos stavke", true),
-                        c.broj(n, "cac:Price/cbc:PriceAmount", "BT-146 neto cijena", true),
-                        c.broj(n, "cac:Price/cac:AllowanceCharge/cbc:BaseAmount", "BT-148", false),
-                        c.broj(n, "cac:Price/cbc:BaseQuantity", "BT-149", false),
-                        c.tekst(n, "cac:Price/cbc:BaseQuantity/@unitCode"),
-                        c.obvezanTekst(n, "cac:Item/cac:ClassifiedTaxCategory/cbc:ID", "BT-151 kategorija PDV-a stavke"),
-                        c.broj(n, "cac:Item/cac:ClassifiedTaxCategory/cbc:Percent", "BT-152", false),
-                        c.obvezanTekst(n, "cac:Item/cbc:Name", "BT-153 naziv artikla"),
-                        c.tekst(n, "cac:Item/cbc:Description"),
-                        c.tekst(n, "cac:Item/cac:ClassifiedTaxCategory/cbc:Name"),
-                        c.cvorovi(n, "cac:Item/cac:CommodityClassification/cbc:ItemClassificationCode").stream()
-                                .map(k -> new KlasifikacijaArtikla(
-                                        c.tekst(k, "."),
-                                        c.obvezanTekst(k, "@listID", "BT-158-1 shema klasifikacije"),
-                                        c.tekst(k, "@listVersionID")))
-                                .toList()))
-                .toList();
-        if (stavke.isEmpty()) {
-            greske.add("Račun nema nijednu stavku (BG-25)");
-        }
+        var prethodni = prethodniRacuni(c, root);
+        var izdavatelj = izdavatelj(c, root);
+        var primatelj = primatelj(c, root);
+        var prijenosi = prijenosiSredstava(c, root);
+        var ukupno = ukupanIznos(c, root);
+        var raspodjela = raspodjelaPdv(c, root);
+        var popusti = popusti(c, root);
+        var troskovi = troskovi(c, root);
+        var stavke = stavke(c, root, invoice);
 
         String kopija = c.tekst(root, "cbc:CopyIndicator");
         return new Racun(
@@ -229,6 +130,140 @@ public final class UblParser {
                 troskovi,
                 stavke,
                 "true".equals(kopija) || "1".equals(kopija));
+    }
+
+    private static List<PrethodniRacun> prethodniRacuni(Citac c, Element root) {
+        return c.cvorovi(root, "cac:BillingReference").stream()
+                .map(n -> new PrethodniRacun(
+                        c.obvezanTekst(n, "cac:InvoiceDocumentReference/cbc:ID", "BT-25 broj prethodnog računa"),
+                        c.datum(n, "cac:InvoiceDocumentReference/cbc:IssueDate", "BT-26 datum prethodnog računa", true)))
+                .toList();
+    }
+
+    private static Izdavatelj izdavatelj(Citac c, Element root) {
+        var dobavljac = c.cvor(root, "cac:AccountingSupplierParty");
+        if (dobavljac == null) {
+            c.greske.add("Nedostaje BG-4 prodavatelj (cac:AccountingSupplierParty)");
+            return null;
+        }
+        return new Izdavatelj(
+                c.obvezanTekst(dobavljac, "cac:Party/cac:PartyLegalEntity/cbc:RegistrationName", "BT-27 naziv prodavatelja"),
+                c.oib(dobavljac, "BT-31", "BT-34"),
+                c.oibOperatera(dobavljac));
+    }
+
+    private static Primatelj primatelj(Citac c, Element root) {
+        var kupac = c.cvor(root, "cac:AccountingCustomerParty");
+        if (kupac == null) {
+            c.greske.add("Nedostaje BG-7 kupac (cac:AccountingCustomerParty)");
+            return null;
+        }
+        return new Primatelj(
+                c.obvezanTekst(kupac, "cac:Party/cac:PartyLegalEntity/cbc:RegistrationName", "BT-44 naziv kupca"),
+                c.oib(kupac, "BT-48", "BT-49"));
+    }
+
+    private static List<PrijenosSredstava> prijenosiSredstava(Citac c, Element root) {
+        return c.cvorovi(root, "cac:PaymentMeans/cac:PayeeFinancialAccount").stream()
+                .map(n -> new PrijenosSredstava(
+                        c.obvezanTekst(n, "cbc:ID", "BT-84 identifikator računa za plaćanje"),
+                        c.tekst(n, "cbc:Name"),
+                        c.tekst(n, "cac:FinancialInstitutionBranch/cbc:ID")))
+                .toList();
+    }
+
+    private static DokumentUkupanIznos ukupanIznos(Citac c, Element root) {
+        var pdv = c.broj(root, "cac:TaxTotal/cbc:TaxAmount", "BT-110 ukupni PDV", false);
+        return new DokumentUkupanIznos(
+                c.broj(root, "cac:LegalMonetaryTotal/cbc:LineExtensionAmount", "BT-106 zbroj neto iznosa stavki", true),
+                c.broj(root, "cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount", "BT-107", false),
+                c.broj(root, "cac:LegalMonetaryTotal/cbc:ChargeTotalAmount", "BT-108", false),
+                c.broj(root, "cac:LegalMonetaryTotal/cbc:TaxExclusiveAmount", "BT-109 iznos bez PDV-a", true),
+                pdv == null ? BigDecimal.ZERO : pdv,
+                c.broj(root, "cac:LegalMonetaryTotal/cbc:TaxInclusiveAmount", "BT-112 iznos s PDV-om", true),
+                c.broj(root, "cac:LegalMonetaryTotal/cbc:PrepaidAmount", "BT-113", false),
+                c.broj(root, "cac:LegalMonetaryTotal/cbc:PayableAmount", "BT-115 iznos za plaćanje", true));
+    }
+
+    private static List<RaspodjelaPdv> raspodjelaPdv(Citac c, Element root) {
+        var hrRaspodjela = c.cvorovi(root, HR_TAX_SUBTOTAL);
+        var raspodjela = !hrRaspodjela.isEmpty()
+                ? hrRaspodjela.stream().map(n -> new RaspodjelaPdv(
+                        c.obvezanTekst(n, "hrextac:HRTaxCategory/cbc:ID", "HR-BT-18 kategorija PDV-a"),
+                        c.broj(n, "cbc:TaxableAmount", "HR-BT-16 oporezivi iznos", true),
+                        c.broj(n, "cbc:TaxAmount", "HR-BT-17 iznos poreza", true),
+                        c.broj(n, "hrextac:HRTaxCategory/cbc:Percent", "HR-BT-19 stopa", false),
+                        c.tekst(n, "hrextac:HRTaxCategory/cbc:TaxExemptionReasonCode"),
+                        c.tekst(n, "hrextac:HRTaxCategory/cbc:TaxExemptionReason"),
+                        c.tekst(n, "hrextac:HRTaxCategory/cbc:Name"))).toList()
+                : c.cvorovi(root, "cac:TaxTotal/cac:TaxSubtotal").stream().map(n -> new RaspodjelaPdv(
+                        c.obvezanTekst(n, "cac:TaxCategory/cbc:ID", "BT-118 kategorija PDV-a"),
+                        c.broj(n, "cbc:TaxableAmount", "BT-116 oporezivi iznos", true),
+                        c.broj(n, "cbc:TaxAmount", "BT-117 iznos poreza", true),
+                        c.broj(n, "cac:TaxCategory/cbc:Percent", "BT-119 stopa", false),
+                        c.tekst(n, "cac:TaxCategory/cbc:TaxExemptionReasonCode"),
+                        c.tekst(n, "cac:TaxCategory/cbc:TaxExemptionReason"),
+                        null)).toList();
+        if (raspodjela.isEmpty()) {
+            c.greske.add("Nedostaje raščlamba PDV-a (BG-23 ili HR-BG-2)");
+        }
+        return raspodjela;
+    }
+
+    private static List<DokumentPopust> popusti(Citac c, Element root) {
+        return c.cvorovi(root, "cac:AllowanceCharge[normalize-space(cbc:ChargeIndicator)='false']").stream()
+                .map(n -> new DokumentPopust(
+                        c.broj(n, "cbc:Amount", "BT-92 iznos popusta", true),
+                        c.obvezanTekst(n, "cac:TaxCategory/cbc:ID", "BT-95 kategorija PDV-a popusta"),
+                        c.broj(n, "cac:TaxCategory/cbc:Percent", "BT-96", false),
+                        c.tekst(n, "cbc:AllowanceChargeReason"),
+                        c.tekst(n, "cbc:AllowanceChargeReasonCode")))
+                .toList();
+    }
+
+    private static List<DokumentTrosak> troskovi(Citac c, Element root) {
+        return c.cvorovi(root, "cac:AllowanceCharge[normalize-space(cbc:ChargeIndicator)='true']").stream()
+                .map(n -> new DokumentTrosak(
+                        c.broj(n, "cbc:Amount", "BT-99 iznos troška", true),
+                        c.obvezanTekst(n, "cac:TaxCategory/cbc:ID", "BT-102 kategorija PDV-a troška"),
+                        c.tekst(n, "cac:TaxCategory/cbc:Name"),
+                        c.broj(n, "cac:TaxCategory/cbc:Percent", "BT-103", false),
+                        c.tekst(n, "cac:TaxCategory/cbc:TaxExemptionReason"),
+                        c.tekst(n, "cac:TaxCategory/cbc:TaxExemptionReasonCode")))
+                .toList();
+    }
+
+    private static List<Stavka> stavke(Citac c, Element root, boolean invoice) {
+        String kolicina = invoice ? "cbc:InvoicedQuantity" : "cbc:CreditedQuantity";
+        var stavke = c.cvorovi(root, invoice ? "cac:InvoiceLine" : "cac:CreditNoteLine").stream()
+                .map(n -> new Stavka(
+                        c.broj(n, kolicina, "BT-129 količina", true),
+                        c.obvezanTekst(n, kolicina + "/@unitCode", "BT-130 jedinica mjere"),
+                        c.broj(n, "cbc:LineExtensionAmount", "BT-131 neto iznos stavke", true),
+                        c.broj(n, "cac:Price/cbc:PriceAmount", "BT-146 neto cijena", true),
+                        c.broj(n, "cac:Price/cac:AllowanceCharge/cbc:BaseAmount", "BT-148", false),
+                        c.broj(n, "cac:Price/cbc:BaseQuantity", "BT-149", false),
+                        c.tekst(n, "cac:Price/cbc:BaseQuantity/@unitCode"),
+                        c.obvezanTekst(n, "cac:Item/cac:ClassifiedTaxCategory/cbc:ID", "BT-151 kategorija PDV-a stavke"),
+                        c.broj(n, "cac:Item/cac:ClassifiedTaxCategory/cbc:Percent", "BT-152", false),
+                        c.obvezanTekst(n, "cac:Item/cbc:Name", "BT-153 naziv artikla"),
+                        c.tekst(n, "cac:Item/cbc:Description"),
+                        c.tekst(n, "cac:Item/cac:ClassifiedTaxCategory/cbc:Name"),
+                        klasifikacije(c, n)))
+                .toList();
+        if (stavke.isEmpty()) {
+            c.greske.add("Račun nema nijednu stavku (BG-25)");
+        }
+        return stavke;
+    }
+
+    private static List<KlasifikacijaArtikla> klasifikacije(Citac c, Node stavka) {
+        return c.cvorovi(stavka, "cac:Item/cac:CommodityClassification/cbc:ItemClassificationCode").stream()
+                .map(k -> new KlasifikacijaArtikla(
+                        c.tekst(k, "."),
+                        c.obvezanTekst(k, "@listID", "BT-158-1 shema klasifikacije"),
+                        c.tekst(k, "@listVersionID")))
+                .toList();
     }
 
     private static Document parsiraj(byte[] xml) {
