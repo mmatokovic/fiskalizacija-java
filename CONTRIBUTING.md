@@ -21,3 +21,22 @@ Only JDK 17+ is required; the wrapper downloads Maven. Unit tests need no networ
   `src/test/resources/primjeri`.
 - Record user-visible changes in [CHANGELOG.md](CHANGELOG.md) under `Unreleased`.
 - The build must pass without compiler or javadoc warnings.
+
+## Releasing
+
+Releases are cut from `main` with a tag; the version comes from the tag, so nothing is committed back.
+
+1. In a pull request, rename `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD` and add a new empty
+   `## [Unreleased]` above it. Merge it.
+2. Tag the merge commit on `main` and push the tag:
+
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+
+3. The `release` workflow checks that the tag is on `main` and that the changelog has the version, then builds,
+   signs and publishes to Maven Central and creates the GitHub release with that changelog section.
+
+The workflow needs the repository secrets `CENTRAL_USERNAME`, `CENTRAL_TOKEN` (a Central Portal user token),
+`GPG_PRIVATE_KEY` and `GPG_PASSPHRASE`. It runs in the `release` environment, where a required reviewer can be added.

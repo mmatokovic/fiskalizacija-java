@@ -12,4 +12,5 @@
 * In tests, prefer the official Porezna uprava examples in `src/test/resources/primjeri`. Name integration tests `*IT` without a `Test` prefix.
 * Keep `README.md` and `README-HR.md` in sync, and record user-visible changes in `CHANGELOG.md`.
 * Commit messages are a single short line in English.
+* Work in short-lived branches merged to `main` through pull requests. Releases are tags `vX.Y.Z` on `main` (see CONTRIBUTING.md); the version is `${revision}` and never committed.
 * Use `./mvnw verify` when you're done.
