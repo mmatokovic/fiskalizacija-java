@@ -15,6 +15,7 @@ import org.w3c.dom.Element;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -29,10 +30,16 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Klijent za Fiskalizaciju 2.0 (B2B): evidentiranje eRačuna i eIzvještavanje.
  * Thread-safe; jednu instancu dijele svi pozivi.
+ *
+ * <p>Poslovno odbijanje Porezne je {@link Rezultat} s {@code prihvacen() == false}. Iznimke: {@link NeispravanZahtjevException}
+ * kad poruka nije valjana (XSD, iznos s više od dvije decimale) i ništa se ne šalje, {@link FiskalizacijaException} kad
+ * slanje ne uspije ili odgovor nije valjan, {@link IllegalStateException} kad potpisivanje ne uspije (npr. ključ koji nije
+ * RSA ni EC) i {@link NullPointerException} za {@code null} argumente.
  *
  * <pre>{@code
  * var client = FiskalizacijaClient.builder(Okruzenje.TEST, Potpisivac.izP12(p12, lozinka)).build();
@@ -41,6 +48,11 @@ import java.util.Set;
  */
 public final class FiskalizacijaClient {
 
+    /** OIB Ministarstva financija, kojem pripada Porezna uprava; nalazi se u certifikatima njezinih servisa. */
+    public static final String OIB_MINISTARSTVA_FINANCIJA = "18683136487";
+
+    private static final int MAKS_ODGOVOR = 10 * 1024 * 1024;
+
     private final URI adresa;
     private final Potpisivac potpisivac;
     private final Set<TrustAnchor> sidra;
@@ -48,6 +60,7 @@ public final class FiskalizacijaClient {
     private final Duration timeout;
     private final boolean xsdValidacija;
     private final Clock sat;
+    private final Predicate<X509Certificate> potpisnikOdgovora;
     private final HttpClient http;
 
     private FiskalizacijaClient(Builder b) {
@@ -58,7 +71,12 @@ public final class FiskalizacijaClient {
         this.timeout = b.timeout;
         this.xsdValidacija = b.xsdValidacija;
         this.sat = b.sat;
-        this.http = HttpClient.newBuilder().sslContext(b.ssl).connectTimeout(b.timeout).build();
+        this.potpisnikOdgovora = b.potpisnikOdgovora;
+        var http = HttpClient.newBuilder().sslContext(b.ssl).connectTimeout(b.timeout);
+        if (b.proxy != null) {
+            http.proxy(b.proxy);
+        }
+        this.http = http.build();
     }
 
     /** Okruženje određuje adresu servisa i povjerljive FINA certifikate; {@code potpisivac} potpisuje zahtjeve. */
@@ -198,22 +216,32 @@ public final class FiskalizacijaClient {
      * @throws FiskalizacijaException ako poziv ne uspije ili odgovor nije valjan fiskalizacijski odgovor
      */
     public Rezultat posalji(PripremljeniZahtjev zahtjev) {
-        HttpResponse<String> odgovor;
+        int status;
+        String tijelo;
         try {
-            odgovor = http.send(HttpRequest.newBuilder(adresa)
+            var odgovor = http.send(HttpRequest.newBuilder(adresa)
                             .timeout(timeout)
                             .header("Content-Type", "application/xml; charset=utf-8")
                             .header("SOAPAction", "\"\"")
                             .POST(HttpRequest.BodyPublishers.ofString(zahtjev.soap(), StandardCharsets.UTF_8))
                             .build(),
-                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                    HttpResponse.BodyHandlers.ofInputStream());
+            status = odgovor.statusCode();
+            try (var in = odgovor.body()) {
+                byte[] bajtovi = in.readNBytes(MAKS_ODGOVOR + 1);
+                if (bajtovi.length > MAKS_ODGOVOR) {
+                    throw new FiskalizacijaException("Odgovor je veći od " + MAKS_ODGOVOR + " bajtova (HTTP " + status + ")",
+                            status, null, null);
+                }
+                tijelo = new String(bajtovi, StandardCharsets.UTF_8);
+            }
         } catch (IOException e) {
             throw new FiskalizacijaException("Slanje na " + adresa + " nije uspjelo: " + e.getMessage(), 0, null, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new FiskalizacijaException("Slanje prekinuto", 0, null, e);
         }
-        return obradiOdgovor(zahtjev, odgovor.statusCode(), odgovor.body());
+        return obradiOdgovor(zahtjev, status, tijelo);
     }
 
     /**
@@ -255,11 +283,15 @@ public final class FiskalizacijaClient {
             throw new FiskalizacijaException(odgovorElement + " ne sadrži element Odgovor (HTTP " + httpStatus + ")",
                     httpStatus, soapOdgovor, null);
         }
-        if (o.idZahtjeva() != null && !o.idZahtjeva().equals(zahtjev.idZahtjeva())) {
+        if (o.idZahtjeva() == null) {
+            throw new FiskalizacijaException("Odgovor nema idZahtjeva (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
+        }
+        if (!o.idZahtjeva().equals(zahtjev.idZahtjeva())) {
             throw new FiskalizacijaException("Odgovor je za zahtjev " + o.idZahtjeva() + ", a poslan je " + zahtjev.idZahtjeva()
                     + " (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
         }
-        return new Rezultat(zahtjev.idZahtjeva(), o, ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici), httpStatus,
+        return new Rezultat(zahtjev.idZahtjeva(), o,
+                ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici, null, potpisnikOdgovora), httpStatus,
                 zahtjev.soap(), soapOdgovor, primljeno);
     }
 
@@ -296,7 +328,7 @@ public final class FiskalizacijaClient {
         if (odgovorEl == null) {
             return PotpisOdgovora.NEISPRAVAN;
         }
-        return ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici, primljen);
+        return ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici, primljen, potpisnikOdgovora);
     }
 
     static Odgovor odgovor(Element odgovorElement) {
@@ -310,7 +342,8 @@ public final class FiskalizacijaClient {
             String redniBroj = tekst(g, "redniBrojZapisa");
             greska = new Greska(tekst(g, "sifra"), redniBroj == null ? null : Integer.valueOf(redniBroj), tekst(g, "opis"));
         }
-        return new Odgovor(tekst(o, "idZahtjeva"), "true".equals(tekst(o, "prihvacenZahtjev")), greska);
+        String prihvacen = tekst(o, "prihvacenZahtjev");
+        return new Odgovor(tekst(o, "idZahtjeva"), "true".equals(prihvacen) || "1".equals(prihvacen), greska);
     }
 
     private static Element dijete(Element roditelj, String lokalnoIme) {
@@ -339,6 +372,9 @@ public final class FiskalizacijaClient {
         private Duration timeout = Duration.ofSeconds(30);
         private boolean xsdValidacija = true;
         private Clock sat = Clock.system(ZoneId.of("Europe/Zagreb"));
+        private Predicate<X509Certificate> potpisnikOdgovora =
+                c -> c.getSubjectX500Principal().getName().contains(OIB_MINISTARSTVA_FINANCIJA);
+        private ProxySelector proxy;
 
         private Builder(Okruzenje okruzenje, Potpisivac potpisivac) {
             this.potpisivac = potpisivac;
@@ -348,7 +384,7 @@ public final class FiskalizacijaClient {
             this.ssl = FinaCertifikati.sslContext(okruzenje);
         }
 
-        /** Za proxy ili gateway ispred servisa Porezne uprave. */
+        /** Za gateway ili reverse proxy ispred servisa Porezne uprave; za forward proxy vidi {@link #proxy(ProxySelector)}. */
         public Builder adresa(URI adresa) {
             this.adresa = Objects.requireNonNull(adresa, "adresa");
             return this;
@@ -383,9 +419,28 @@ public final class FiskalizacijaClient {
             return this;
         }
 
-        /** Sat u zoni Europe/Zagreb za {@code datumVrijemeSlanja}; korisno u testovima. */
+        /**
+         * Sat za {@code datumVrijemeSlanja}, koji se uvijek piše po zagrebačkom vremenu, i za {@link Rezultat#primljeno()};
+         * korisno u testovima.
+         */
         public Builder sat(Clock sat) {
             this.sat = Objects.requireNonNull(sat, "sat");
+            return this;
+        }
+
+        /** Forward proxy za HTTP vezu prema Poreznoj, npr. {@code ProxySelector.of(new InetSocketAddress("proxy", 8080))}. */
+        public Builder proxy(ProxySelector proxy) {
+            this.proxy = Objects.requireNonNull(proxy, "proxy");
+            return this;
+        }
+
+        /**
+         * Koji certifikat smije potpisati odgovor, uz ispravan lanac do povjerljivih CA. Zadano: subjekt sadrži
+         * {@value FiskalizacijaClient#OIB_MINISTARSTVA_FINANCIJA}, jer svaki porezni obveznik ima vlastiti FINA certifikat
+         * kojim bi inače mogao potpisati lažni odgovor.
+         */
+        public Builder potpisnikOdgovora(Predicate<X509Certificate> provjera) {
+            this.potpisnikOdgovora = Objects.requireNonNull(provjera, "provjera");
             return this;
         }
 

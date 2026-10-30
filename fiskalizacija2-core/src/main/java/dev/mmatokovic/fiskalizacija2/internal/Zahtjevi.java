@@ -1,5 +1,6 @@
 package dev.mmatokovic.fiskalizacija2.internal;
 
+import dev.mmatokovic.fiskalizacija2.NeispravanZahtjevException;
 import dev.mmatokovic.fiskalizacija2.model.DokumentPopust;
 import dev.mmatokovic.fiskalizacija2.model.DokumentTrosak;
 import dev.mmatokovic.fiskalizacija2.model.DokumentUkupanIznos;
@@ -260,7 +261,7 @@ public final class Zahtjevi {
         try {
             return v.setScale(2, RoundingMode.UNNECESSARY);
         } catch (ArithmeticException e) {
-            throw new IllegalArgumentException("Iznos smije imati najviše dvije decimale: " + v.toPlainString(), e);
+            throw new NeispravanZahtjevException(List.of("Iznos smije imati najviše dvije decimale: " + v.toPlainString()));
         }
     }
 }

@@ -1,5 +1,6 @@
 package dev.mmatokovic.fiskalizacija2.internal;
 
+import dev.mmatokovic.fiskalizacija2.NeispravanZahtjevException;
 import dev.mmatokovic.fiskalizacija2.Potpisivac;
 import dev.mmatokovic.fiskalizacija2.Primjeri;
 import dev.mmatokovic.fiskalizacija2.UblParser;
@@ -111,7 +112,7 @@ class ZahtjeviTest {
 
     @Test
     void iznosSViseOdDvijeDecimaleSeNeZaokruzujeTiho() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(NeispravanZahtjevException.class,
                 () -> Zahtjevi.evidentirajNaplatu(List.of(naplata(new BigDecimal("10.005"))), Primjeri.SAT));
     }
 

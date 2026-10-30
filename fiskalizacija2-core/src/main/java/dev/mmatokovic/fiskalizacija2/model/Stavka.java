@@ -2,6 +2,7 @@ package dev.mmatokovic.fiskalizacija2.model;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Stavka računa (BG-25).
@@ -36,6 +37,6 @@ public record Stavka(
         List<KlasifikacijaArtikla> klasifikacije) {
 
     public Stavka {
-        klasifikacije = List.copyOf(klasifikacije);
+        klasifikacije = List.copyOf(Objects.requireNonNull(klasifikacije, "klasifikacije"));
     }
 }

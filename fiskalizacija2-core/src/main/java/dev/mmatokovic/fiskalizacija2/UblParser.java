@@ -73,8 +73,8 @@ public final class UblParser {
 
     /**
      * Tolerantno čitanje: greške se dodaju u {@code greske}, a polja koja se nisu mogla pročitati ostaju {@code null}.
-     * Korisno za ulazne eRačune koje ne kontrolirate. Ako se takav račun preda klijentu, polja koja nedostaju
-     * prijavi XSD validacija ({@link NeispravanZahtjevException}).
+     * Korisno za ulazne eRačune koje ne kontrolirate. Ako se takav račun preda klijentu, polja koja nedostaju i iznosi
+     * s više od dvije decimale prijave se kao {@link NeispravanZahtjevException}.
      *
      * @param xml    UBL Invoice ili CreditNote, po želji u StandardBusinessDocument omotnici
      * @param greske lista u koju se dodaju pronađene greške

@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Provjerava potpis odgovora Porezne uprave i lanac certifikata potpisnika do zadanih CA.
@@ -51,6 +52,7 @@ public final class ProvjeraPotpisa {
     private static final String XADES_SIGNED_PROPERTIES = "http://uri.etsi.org/01903#SignedProperties";
     private static final int MIN_RSA_BITOVA = 2048;
     private static final int MAKS_REFERENCI = 5;
+    private static final int MAKS_TRANSFORMACIJA = 4;
 
     private static final Set<String> KANONIKALIZACIJE = Set.of(
             CanonicalizationMethod.INCLUSIVE, CanonicalizationMethod.INCLUSIVE_WITH_COMMENTS,
@@ -70,20 +72,21 @@ public final class ProvjeraPotpisa {
      * @param potpisani element čiji se sadržaj koristi (npr. {@code EvidentirajNaplatuOdgovor}); potpis je njegovo dijete
      */
     public static PotpisOdgovora provjeri(Element potpisani, Set<TrustAnchor> sidra, Collection<X509Certificate> posrednici) {
-        return provjeri(potpisani, sidra, posrednici, null);
+        return provjeri(potpisani, sidra, posrednici, null, c -> true);
     }
 
     /**
-     * @param trenutak trenutak na koji se provjerava valjanost lanca certifikata, ili {@code null} za sada
+     * @param trenutak  trenutak na koji se provjerava valjanost lanca certifikata, ili {@code null} za sada
+     * @param potpisnik koji certifikat smije potpisati odgovor, uz ispravan lanac
      */
     public static PotpisOdgovora provjeri(Element potpisani, Set<TrustAnchor> sidra, Collection<X509Certificate> posrednici,
-            Instant trenutak) {
+            Instant trenutak, Predicate<X509Certificate> potpisnik) {
         var signatureEl = potpis(potpisani);
         if (signatureEl == null) {
             return PotpisOdgovora.NEDOSTAJE;
         }
 
-        var potpisnik = new X509Certificate[1];
+        var certifikat = new X509Certificate[1];
         var ctx = new DOMValidateContext(new KeySelector() {
             @Override
             public KeySelectorResult select(KeyInfo keyInfo, Purpose purpose, AlgorithmMethod method, XMLCryptoContext context)
@@ -93,7 +96,7 @@ public final class ProvjeraPotpisa {
                         if (sadrzaj instanceof X509Data x509) {
                             for (var o : x509.getContent()) {
                                 if (o instanceof X509Certificate c) {
-                                    potpisnik[0] = c;
+                                    certifikat[0] = c;
                                     return () -> c.getPublicKey();
                                 }
                             }
@@ -128,26 +131,26 @@ public final class ProvjeraPotpisa {
         } catch (Exception e) {
             return PotpisOdgovora.NEISPRAVAN;
         }
-        if (potpisnik[0].getPublicKey() instanceof RSAPublicKey rsa && rsa.getModulus().bitLength() < MIN_RSA_BITOVA) {
+        if (certifikat[0].getPublicKey() instanceof RSAPublicKey rsa && rsa.getModulus().bitLength() < MIN_RSA_BITOVA) {
             return PotpisOdgovora.NEISPRAVAN;
         }
 
         try {
             var cilj = new X509CertSelector();
-            cilj.setCertificate(potpisnik[0]);
+            cilj.setCertificate(certifikat[0]);
             var parametri = new PKIXBuilderParameters(sidra, cilj);
             parametri.setRevocationEnabled(false);
             if (trenutak != null) {
                 parametri.setDate(Date.from(trenutak));
             }
             var certifikati = new ArrayList<X509Certificate>(posrednici);
-            certifikati.add(potpisnik[0]);
+            certifikati.add(certifikat[0]);
             parametri.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(certifikati)));
             CertPathBuilder.getInstance("PKIX").build(parametri);
-            return PotpisOdgovora.ISPRAVAN;
         } catch (Exception e) {
             return PotpisOdgovora.NEPOUZDAN_CERTIFIKAT;
         }
+        return potpisnik.test(certifikat[0]) ? PotpisOdgovora.ISPRAVAN : PotpisOdgovora.NEPOUZDAN_CERTIFIKAT;
     }
 
     private static Element potpis(Element potpisani) {
@@ -173,6 +176,9 @@ public final class ProvjeraPotpisa {
         for (Object o : si.getReferences()) {
             var ref = (Reference) o;
             if (!SAZECI.contains(ref.getDigestMethod().getAlgorithm())) {
+                return false;
+            }
+            if (ref.getTransforms().size() > MAKS_TRANSFORMACIJA) {
                 return false;
             }
             for (Object t : ref.getTransforms()) {

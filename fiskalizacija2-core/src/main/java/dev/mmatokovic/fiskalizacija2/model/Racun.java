@@ -2,6 +2,7 @@ package dev.mmatokovic.fiskalizacija2.model;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Podaci računa iz eRačuna (UBL). Ista struktura služi za {@code ERacun} (evidentiranje eRačuna)
@@ -50,11 +51,11 @@ public record Racun(
         boolean indikatorKopije) {
 
     public Racun {
-        prethodniRacuni = List.copyOf(prethodniRacuni);
-        prijenosiSredstava = List.copyOf(prijenosiSredstava);
-        raspodjelaPdv = List.copyOf(raspodjelaPdv);
-        popusti = List.copyOf(popusti);
-        troskovi = List.copyOf(troskovi);
-        stavke = List.copyOf(stavke);
+        prethodniRacuni = List.copyOf(Objects.requireNonNull(prethodniRacuni, "prethodniRacuni"));
+        prijenosiSredstava = List.copyOf(Objects.requireNonNull(prijenosiSredstava, "prijenosiSredstava"));
+        raspodjelaPdv = List.copyOf(Objects.requireNonNull(raspodjelaPdv, "raspodjelaPdv"));
+        popusti = List.copyOf(Objects.requireNonNull(popusti, "popusti"));
+        troskovi = List.copyOf(Objects.requireNonNull(troskovi, "troskovi"));
+        stavke = List.copyOf(Objects.requireNonNull(stavke, "stavke"));
     }
 }

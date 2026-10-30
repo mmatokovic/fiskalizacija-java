@@ -7,7 +7,9 @@ import dev.mmatokovic.fiskalizacija2.internal.Zahtjevi;
 import com.sun.net.httpserver.HttpServer;
 import dev.mmatokovic.fiskalizacija2.model.NacinPlacanja;
 import dev.mmatokovic.fiskalizacija2.model.Naplata;
+import dev.mmatokovic.fiskalizacija2.model.Odbijanje;
 import dev.mmatokovic.fiskalizacija2.model.VrstaERacuna;
+import dev.mmatokovic.fiskalizacija2.model.VrstaRazlogaOdbijanja;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,16 +45,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FiskalizacijaClientTest {
 
     private final Potpisivac potpisivac = Primjeri.potpisivac();
-    private Potpisivac potpisivacOdgovora = potpisivac;
-    private final List<String> primljeno = new ArrayList<>();
-    private final List<String> contentType = new ArrayList<>();
+    private volatile Potpisivac potpisivacOdgovora = potpisivac;
+    private final List<String> primljeno = new CopyOnWriteArrayList<>();
+    private final List<String> contentType = new CopyOnWriteArrayList<>();
+    private final List<String> soapAction = new CopyOnWriteArrayList<>();
     private HttpServer server;
-    private int status;
+    private volatile int status;
     /** Tijelo odgovora; {@value #ID_ZAHTJEVA} se zamjenjuje id-jem primljenog zahtjeva. */
-    private String odgovor;
+    private volatile String odgovor;
     /** Element odgovora koji lažni servis potpiše nakon zamjene id-ja, ili {@code null} za nepotpisan odgovor. */
-    private String potpisati;
-    private final List<String> poslano = new ArrayList<>();
+    private volatile String potpisati;
+    private final List<String> poslano = new CopyOnWriteArrayList<>();
     private static final String ID_ZAHTJEVA = "ID_ZAHTJEVA";
 
     @BeforeEach
@@ -61,6 +65,7 @@ class FiskalizacijaClientTest {
             String zahtjev = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             primljeno.add(zahtjev);
             contentType.add(ex.getRequestHeaders().getFirst("Content-Type"));
+            soapAction.add(ex.getRequestHeaders().getFirst("SOAPAction"));
             var id = Pattern.compile(":id=\"([^\"]+)\"").matcher(zahtjev);
             String o = id.find() ? odgovor.replace(ID_ZAHTJEVA, id.group(1)) : odgovor;
             if (potpisati != null) {
@@ -105,6 +110,7 @@ class FiskalizacijaClientTest {
         assertEquals(1, primljeno.size());
         assertEquals(r.soapZahtjev(), primljeno.get(0));
         assertEquals("application/xml; charset=utf-8", contentType.get(0));
+        assertEquals("\"\"", soapAction.get(0));
         var dokument = Xml.parsiraj(primljeno.get(0));
         var zahtjev = (org.w3c.dom.Element) dokument.getElementsByTagNameNS(Zahtjevi.NS_EFIS, "EvidentirajERacunZahtjev").item(0);
         assertEquals(r.idZahtjeva(), zahtjev.getAttributeNS(Zahtjevi.NS_EFIS, "id"));
@@ -337,6 +343,84 @@ class FiskalizacijaClientTest {
         assertTrue(e.getMessage().contains("redniBrojZapisa"), e.getMessage());
     }
 
+    @Test
+    void zadanoSePrihvacaSamoPotpisnikSOibomMinistarstvaFinancija() {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
+        var zadani = FiskalizacijaClient.builder(Okruzenje.TEST, potpisivac)
+                .adresa(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/FiskalizacijaService"))
+                .povjerljiviCertifikati(Primjeri.sidra(potpisivac), List.of())
+                .build();
+
+        assertEquals(PotpisOdgovora.NEPOUZDAN_CERTIFIKAT, zadani.evidentirajNaplatu(naplata()).potpisOdgovora());
+    }
+
+    @Test
+    void odgovorBezIdZahtjevaJeIznimka() {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>")
+                .replace("<eizv:idZahtjeva>" + ID_ZAHTJEVA + "</eizv:idZahtjeva>", "");
+
+        var e = assertThrows(FiskalizacijaException.class, () -> client().evidentirajNaplatu(naplata()));
+
+        assertTrue(e.getMessage().contains("idZahtjeva"), e.getMessage());
+    }
+
+    @Test
+    void soapFaultSHttp200JeIznimka() {
+        status = 200;
+        odgovor = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body>"
+                + "<soapenv:Fault><faultcode>soapenv:Client</faultcode><faultstring>Neispravna poruka</faultstring></soapenv:Fault>"
+                + "</soapenv:Body></soapenv:Envelope>";
+
+        var e = assertThrows(FiskalizacijaException.class, () -> client().evidentirajNaplatu(naplata()));
+
+        assertEquals(200, e.httpStatus());
+        assertTrue(e.getMessage().contains("Neispravna poruka"), e.getMessage());
+    }
+
+    @Test
+    void prihvacenZahtjevJedanJeTrue() {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>1</eizv:prihvacenZahtjev>");
+
+        assertTrue(client().evidentirajNaplatu(naplata()).prihvacen());
+    }
+
+    @Test
+    void rezultatToStringNeSadrziSoapPoruke() {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
+
+        String s = client().evidentirajNaplatu(naplata()).toString();
+
+        assertFalse(s.contains("Envelope"), s);
+        assertFalse(s.contains("11111111119"), s);
+    }
+
+    @Test
+    void odbijanjeIIsporukaKrozKlijent() {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajOdbijanjeOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
+        assertTrue(client().evidentirajOdbijanje(new Odbijanje("1-P1-1", LocalDate.of(2026, 3, 1), "12345678903", "11111111119",
+                LocalDate.of(2026, 3, 2), VrstaRazlogaOdbijanja.N, "Neispravan iznos")).prihvacen());
+
+        odgovor = potpisanOdgovor("EvidentirajIsporukuZaKojuNijeIzdanERacunOdgovor",
+                "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
+        assertTrue(client().evidentirajIsporukuZaKojuNijeIzdanERacun(UblParser.racun(Primjeri.eRacun("eRacun_PDV25.xml")))
+                .prihvacen());
+    }
+
+    @Test
+    void prevelikOdgovorJeIznimka() {
+        status = 200;
+        odgovor = "<a>" + "x".repeat(11 * 1024 * 1024) + "</a>";
+
+        var e = assertThrows(FiskalizacijaException.class, () -> client().evidentirajNaplatu(naplata()));
+
+        assertTrue(e.getMessage().contains("veći od"), e.getMessage());
+    }
+
     private FiskalizacijaClient client() {
         return builder().build();
     }
@@ -346,7 +430,8 @@ class FiskalizacijaClientTest {
                 .adresa(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/FiskalizacijaService"))
                 .povjerljiviCertifikati(Primjeri.sidra(potpisivac), List.of())
                 .timeout(Duration.ofSeconds(5))
-                .sat(Primjeri.SAT);
+                .sat(Primjeri.SAT)
+                .potpisnikOdgovora(c -> true);
     }
 
     private static Naplata naplata() {

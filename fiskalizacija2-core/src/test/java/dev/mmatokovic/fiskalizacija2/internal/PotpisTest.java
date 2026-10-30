@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PotpisTest {
@@ -66,6 +67,14 @@ class PotpisTest {
 
         assertEquals(PotpisOdgovora.NEPOUZDAN_CERTIFIKAT,
                 ProvjeraPotpisa.provjeri(zahtjev(doc), fina, FinaCertifikati.posrednici(Okruzenje.PRODUKCIJA)));
+    }
+
+    @Test
+    void p12SKrivomLozinkomJeJasnaGreska() {
+        var e = assertThrows(IllegalArgumentException.class,
+                () -> Potpisivac.izP12(Primjeri.class.getResourceAsStream("/test-potpis.p12"), "kriva".toCharArray()));
+
+        assertTrue(e.getMessage().contains("PKCS#12"), e.getMessage());
     }
 
     @Test

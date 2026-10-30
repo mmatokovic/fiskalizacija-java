@@ -3,8 +3,8 @@ package dev.mmatokovic.fiskalizacija2;
 /**
  * Provjera OIB-a: 11 znamenki, od kojih je zadnja kontrolna (ISO 7064, MOD 11,10).
  *
- * <p>Library je primjenjuje samo kad zna da je vrijednost hrvatski OIB (npr. {@code CompanyID} s prefiksom HR).
- * Polje {@code oibPorezniBroj} može sadržavati i strani porezni broj, pa se ono pri slanju ne provjerava.
+ * <p>Library je primjenjuje pri čitanju UBL-a, gdje zna da je vrijednost OIB ({@code CompanyID} s prefiksom HR,
+ * {@code EndpointID} sa schemeID 9934, operater). Pri slanju se provjerava samo format, kroz XSD.
  */
 public final class Oib {
 
