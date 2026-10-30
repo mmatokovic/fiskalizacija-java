@@ -89,6 +89,35 @@ class PotpisTest {
     }
 
     @Test
+    void originalSkrivenUPotpisuUzLazniSadrzajNijeIspravan() throws Exception {
+        String ns = Zahtjevi.NS_EIZV;
+        String ds = "http://www.w3.org/2000/09/xmldsig#";
+        var doc = Xml.parsiraj("<soapenv:Envelope xmlns:soapenv=\"" + Zahtjevi.NS_SOAP + "\"><soapenv:Body>"
+                + "<eizv:EvidentirajNaplatuOdgovor xmlns:eizv=\"" + ns + "\" eizv:id=\"I\"><eizv:Odgovor>"
+                + "<eizv:prihvacenZahtjev>false</eizv:prihvacenZahtjev></eizv:Odgovor></eizv:EvidentirajNaplatuOdgovor>"
+                + "</soapenv:Body></soapenv:Envelope>");
+        potpisivac.potpisi((Element) doc.getElementsByTagNameNS(ns, "EvidentirajNaplatuOdgovor").item(0), "I");
+        doc = Xml.parsiraj(Xml.serijaliziraj(doc));
+        var original = (Element) doc.getElementsByTagNameNS(ns, "EvidentirajNaplatuOdgovor").item(0);
+        var tijelo = (Element) original.getParentNode();
+        var potpis = (Element) original.getElementsByTagNameNS(ds, "Signature").item(0);
+        original.removeChild(potpis);
+        var lazni = doc.createElementNS(ns, "eizv:EvidentirajNaplatuOdgovor");
+        lazni.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:eizv", ns);
+        lazni.setAttributeNS(ns, "eizv:id", "I");
+        lazni.appendChild(doc.createElementNS(ns, "eizv:Odgovor"))
+                .appendChild(doc.createElementNS(ns, "eizv:prihvacenZahtjev")).setTextContent("true");
+        tijelo.replaceChild(lazni, original);
+        lazni.appendChild(potpis);
+        potpis.appendChild(doc.createElementNS(ds, "ds:Object")).appendChild(original);
+
+        var prenesen = Xml.parsiraj(Xml.serijaliziraj(doc));
+        var procitan = (Element) prenesen.getElementsByTagNameNS(Zahtjevi.NS_SOAP, "Body").item(0).getFirstChild();
+
+        assertEquals(PotpisOdgovora.NEISPRAVAN, ProvjeraPotpisa.provjeri(procitan, Primjeri.sidra(potpisivac), List.of()));
+    }
+
+    @Test
     void referencaIzvanDokumentaSeOdbija() throws Exception {
         var doc = potpisanIPrenesen();
         var ref = (Element) doc.getElementsByTagNameNS("http://www.w3.org/2000/09/xmldsig#", "Reference").item(0);

@@ -28,3 +28,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Signature verification only accepts same-document references, a fixed set of algorithms and transforms, and RSA
   keys of at least 2048 bits.
 - A response whose `idZahtjeva` differs from the sent request is rejected with `FiskalizacijaException`.
+- A referenced id must be unique in the whole document, so a copy of the signed element hidden inside the signature
+  (for example in `ds:Object`) can no longer validate a forged response. At most five references are accepted.
+
+### Fixed
+- `datumVrijemeSlanja` is always written in Europe/Zagreb time, whatever zone the configured clock uses.
+- A SOAP Fault's `faultstring` is included in the `FiskalizacijaException` message.
+- A malformed `redniBrojZapisa` in a response is reported as `FiskalizacijaException`.

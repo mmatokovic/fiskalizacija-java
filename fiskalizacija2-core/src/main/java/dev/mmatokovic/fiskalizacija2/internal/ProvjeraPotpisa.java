@@ -33,7 +33,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -48,6 +50,7 @@ public final class ProvjeraPotpisa {
     private static final String NS_DS = "http://www.w3.org/2000/09/xmldsig#";
     private static final String XADES_SIGNED_PROPERTIES = "http://uri.etsi.org/01903#SignedProperties";
     private static final int MIN_RSA_BITOVA = 2048;
+    private static final int MAKS_REFERENCI = 5;
 
     private static final Set<String> KANONIKALIZACIJE = Set.of(
             CanonicalizationMethod.INCLUSIVE, CanonicalizationMethod.INCLUSIVE_WITH_COMMENTS,
@@ -114,10 +117,12 @@ public final class ProvjeraPotpisa {
         String id = registrirajId(ctx, potpisani);
         var idUnutarPotpisa = new HashSet<String>();
         registrirajIdove(ctx, signatureEl, idUnutarPotpisa);
+        var pojaveId = new HashMap<String, Integer>();
+        prebrojiIdove(potpisani.getOwnerDocument().getDocumentElement(), pojaveId);
 
         try {
             XMLSignature potpis = fac.unmarshalXMLSignature(ctx);
-            if (!dopusten(potpis.getSignedInfo(), id, idUnutarPotpisa) || !potpis.validate(ctx)) {
+            if (!dopusten(potpis.getSignedInfo(), id, idUnutarPotpisa, pojaveId) || !potpis.validate(ctx)) {
                 return PotpisOdgovora.NEISPRAVAN;
             }
         } catch (Exception e) {
@@ -158,9 +163,10 @@ public final class ProvjeraPotpisa {
         return nadjen;
     }
 
-    private static boolean dopusten(SignedInfo si, String id, Set<String> idUnutarPotpisa) {
+    private static boolean dopusten(SignedInfo si, String id, Set<String> idUnutarPotpisa, Map<String, Integer> pojaveId) {
         if (!KANONIKALIZACIJE.contains(si.getCanonicalizationMethod().getAlgorithm())
-                || !POTPISI.contains(si.getSignatureMethod().getAlgorithm())) {
+                || !POTPISI.contains(si.getSignatureMethod().getAlgorithm())
+                || si.getReferences().size() > MAKS_REFERENCI) {
             return false;
         }
         boolean pokrivaElement = false;
@@ -175,13 +181,40 @@ public final class ProvjeraPotpisa {
                 }
             }
             String uri = ref.getURI() == null ? "" : ref.getURI();
-            if (uri.isEmpty() || (id != null && uri.equals("#" + id))) {
+            if (uri.isEmpty()) {
                 pokrivaElement = true;
-            } else if (!(XADES_SIGNED_PROPERTIES.equals(ref.getType()) && idUnutarPotpisa.contains(uri.substring(1)))) {
+                continue;
+            }
+            if (!uri.startsWith("#")) {
+                return false;
+            }
+            String cilj = uri.substring(1);
+            if (pojaveId.getOrDefault(cilj, 0) != 1) {
+                return false;
+            }
+            if (cilj.equals(id)) {
+                pokrivaElement = true;
+            } else if (!(XADES_SIGNED_PROPERTIES.equals(ref.getType()) && idUnutarPotpisa.contains(cilj))) {
                 return false;
             }
         }
         return pokrivaElement;
+    }
+
+    private static void prebrojiIdove(Element el, Map<String, Integer> pojave) {
+        var atributi = el.getAttributes();
+        for (int i = 0; i < atributi.getLength(); i++) {
+            var a = (Attr) atributi.item(i);
+            String ime = a.getLocalName() != null ? a.getLocalName() : a.getName();
+            if ("id".equals(ime) || "Id".equals(ime)) {
+                pojave.merge(a.getValue(), 1, Integer::sum);
+            }
+        }
+        for (var n = el.getFirstChild(); n != null; n = n.getNextSibling()) {
+            if (n instanceof Element dijete) {
+                prebrojiIdove(dijete, pojave);
+            }
+        }
     }
 
     private static String registrirajId(DOMValidateContext ctx, Element el) {
