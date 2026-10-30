@@ -145,6 +145,7 @@ These choices need confirming on the test environment:
 | Artifact | Contents |
 |---|---|
 | `fiskalizacija2-core` | fiscalization and eIzvještavanje messages, UBL parsing, signing; JDK only |
+| `fiskalizacija2-eracun` | eRačun validation against UBL XSD, EN 16931 and HR CIUS rules (uses phax ph-ubl and phive-rules); in progress, not published yet |
 
 `fiskalizacija2-core` is the JPMS module `dev.mmatokovic.fiskalizacija2`. The public API is the
 `dev.mmatokovic.fiskalizacija2` and `dev.mmatokovic.fiskalizacija2.model` packages; the module does not export

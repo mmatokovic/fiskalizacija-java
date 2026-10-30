@@ -140,6 +140,7 @@ Ove odluke treba potvrditi na testnom okruženju:
 | Artefakt | Sadržaj |
 |---|---|
 | `fiskalizacija2-core` | fiskalizacijske poruke i eIzvještavanje, čitanje UBL-a, potpis; samo JDK |
+| `fiskalizacija2-eracun` | validacija eRačuna prema UBL XSD-u, EN 16931 i HR CIUS pravilima (koristi phax ph-ubl i phive-rules); u izradi, još se ne objavljuje |
 
 `fiskalizacija2-core` je JPMS modul `dev.mmatokovic.fiskalizacija2`. Javni API su paketi `dev.mmatokovic.fiskalizacija2` i
 `dev.mmatokovic.fiskalizacija2.model`; paket `dev.mmatokovic.fiskalizacija2.internal` modul ne izvozi i mijenja se bez najave.
