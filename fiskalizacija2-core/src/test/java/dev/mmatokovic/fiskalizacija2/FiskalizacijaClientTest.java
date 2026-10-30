@@ -211,7 +211,11 @@ class FiskalizacijaClientTest {
         status = 200;
         odgovor = odgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
 
-        assertEquals(PotpisOdgovora.NEDOSTAJE, client().evidentirajNaplatu(naplata()).potpisOdgovora());
+        var r = client().evidentirajNaplatu(naplata());
+
+        assertEquals(PotpisOdgovora.NEDOSTAJE, r.potpisOdgovora());
+        assertFalse(r.prihvacen());
+        assertTrue(r.prihvacenBezProvjerePotpisa());
     }
 
     @Test
@@ -352,7 +356,11 @@ class FiskalizacijaClientTest {
                 .povjerljiviCertifikati(Primjeri.sidra(potpisivac), List.of())
                 .build();
 
-        assertEquals(PotpisOdgovora.NEPOUZDAN_CERTIFIKAT, zadani.evidentirajNaplatu(naplata()).potpisOdgovora());
+        var r = zadani.evidentirajNaplatu(naplata());
+
+        assertEquals(PotpisOdgovora.NEPOUZDAN_CERTIFIKAT, r.potpisOdgovora());
+        assertFalse(r.prihvacen());
+        assertTrue(r.prihvacenBezProvjerePotpisa());
     }
 
     @Test

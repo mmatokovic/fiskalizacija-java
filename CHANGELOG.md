@@ -36,6 +36,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - By default only a certificate whose subject contains the Ministry of Finance OIB may sign responses; a valid FINA
   chain alone is not enough, since every taxpayer has a FINA certificate.
 - Responses larger than 10 MB are rejected, and at most four transforms per reference are accepted.
+- `Rezultat.prihvacen()` is `true` only when the response signature is `ISPRAVAN`; `prihvacenBezProvjerePotpisa()`
+  tells what the response says regardless of the signature.
 - A referenced id must be unique in the whole document, so a copy of the signed element hidden inside the signature
   (for example in `ds:Object`) can no longer validate a forged response. At most five references are accepted.
 - A malformed `redniBrojZapisa` in a response is reported as `FiskalizacijaException`.

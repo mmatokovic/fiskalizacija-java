@@ -31,8 +31,17 @@ public record Rezultat(
         Objects.requireNonNull(odgovor, "odgovor");
     }
 
-    /** Prihvaćen bez greške. Potpis odgovora provjerite zasebno, kroz {@link #potpisOdgovora()}. */
+    /** Porezna je prihvatila zahtjev bez greške, a potpis njezinog odgovora je {@link PotpisOdgovora#ISPRAVAN}. */
     public boolean prihvacen() {
+        return prihvacenBezProvjerePotpisa() && potpisOdgovora == PotpisOdgovora.ISPRAVAN;
+    }
+
+    /**
+     * Što piše u odgovoru, bez obzira na potpis. Ako je ovo {@code true}, a {@link #prihvacen()} {@code false}, zahtjev
+     * nemojte slati ponovno: Porezna ga je vjerojatno evidentirala, ali potpis odgovora nije potvrđen, pa provjerite
+     * {@link #potpisOdgovora()} i postavke potpisnika ({@link FiskalizacijaClient.Builder#potpisnikOdgovora}).
+     */
+    public boolean prihvacenBezProvjerePotpisa() {
         return odgovor.prihvacenZahtjev() && odgovor.greska() == null;
     }
 

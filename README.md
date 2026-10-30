@@ -48,6 +48,8 @@ Rezultat r = client.evidentirajERacun(VrstaERacuna.IZLAZNI, racun);
 
 if (r.prihvacen()) {
     archive.save(r.idZahtjeva(), r.soapZahtjev(), r.soapOdgovor(), r.primljeno());
+} else if (r.prihvacenBezProvjerePotpisa()) {
+    log.error("Accepted, but the response signature is {}; do not resend", r.potpisOdgovora());
 } else {
     log.warn("Porezna rejected the request: {} {}", r.greska().sifra(), r.greska().opis());
 }
@@ -64,7 +66,8 @@ client.evidentirajNaplatu(new Naplata("1-P1-1", LocalDate.of(2026, 3, 1), "12345
 
 | Situation | What happens |
 |---|---|
-| Porezna accepts the request | `Rezultat` with `prihvacen() == true` |
+| Porezna accepts the request and its signature is valid | `Rezultat` with `prihvacen() == true` |
+| Porezna accepts the request, but its signature is missing or not trusted | `prihvacen() == false`, `prihvacenBezProvjerePotpisa() == true`: do not resend, check `potpisOdgovora()` |
 | Porezna rejects the request (business error, e.g. `S009`) | `Rezultat` with `prihvacen() == false` and `greska()` |
 | The request fails the XSD schema, or an amount has more than two decimals | `NeispravanZahtjevException`, nothing is sent |
 | The UBL lacks mandatory fields | `UblException` with **all** errors found |
@@ -75,7 +78,7 @@ client.evidentirajNaplatu(new Naplata("1-P1-1", LocalDate.of(2026, 3, 1), "12345
 
 `Rezultat` always holds the raw signed request and response (`soapZahtjev`, `soapOdgovor`) for archiving and for
 analysing rejected messages. The response signature check is returned as `PotpisOdgovora`
-(`ISPRAVAN`, `NEISPRAVAN`, `NEPOUZDAN_CERTIFIKAT`, `NEDOSTAJE`); the library does not decide for you what to do with it.
+(`ISPRAVAN`, `NEISPRAVAN`, `NEPOUZDAN_CERTIFIKAT`, `NEDOSTAJE`). `prihvacen()` is `true` only with `ISPRAVAN`.
 
 Behind a corporate forward proxy, set it with `Builder.proxy(ProxySelector.of(...))`.
 

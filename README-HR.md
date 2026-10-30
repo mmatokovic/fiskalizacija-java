@@ -43,6 +43,8 @@ Rezultat r = client.evidentirajERacun(VrstaERacuna.IZLAZNI, racun);
 
 if (r.prihvacen()) {
     arhiva.spremi(r.idZahtjeva(), r.soapZahtjev(), r.soapOdgovor(), r.primljeno());
+} else if (r.prihvacenBezProvjerePotpisa()) {
+    log.error("Prihvaćeno, ali potpis odgovora je {}; ne šaljite ponovno", r.potpisOdgovora());
 } else {
     log.warn("Porezna je odbila zahtjev: {} {}", r.greska().sifra(), r.greska().opis());
 }
@@ -59,7 +61,8 @@ client.evidentirajNaplatu(new Naplata("1-P1-1", LocalDate.of(2026, 3, 1), "12345
 
 | Situacija | Što se dogodi |
 |---|---|
-| Porezna prihvati zahtjev | `Rezultat` s `prihvacen() == true` |
+| Porezna prihvati zahtjev i potpis odgovora je ispravan | `Rezultat` s `prihvacen() == true` |
+| Porezna prihvati zahtjev, ali potpis odgovora nedostaje ili nije pouzdan | `prihvacen() == false`, `prihvacenBezProvjerePotpisa() == true`: ne šaljite ponovno, provjerite `potpisOdgovora()` |
 | Porezna odbije zahtjev (poslovna greška, npr. `S009`) | `Rezultat` s `prihvacen() == false` i `greska()` |
 | Zahtjev ne prolazi XSD shemu ili iznos ima više od dvije decimale | `NeispravanZahtjevException`, ništa se ne šalje |
 | UBL nema obvezna polja | `UblException` sa **svim** pronađenim greškama |
@@ -70,7 +73,7 @@ client.evidentirajNaplatu(new Naplata("1-P1-1", LocalDate.of(2026, 3, 1), "12345
 
 `Rezultat` uvijek sadrži sirovi potpisani zahtjev i odgovor (`soapZahtjev`, `soapOdgovor`), za arhivu i za
 analizu odbijenih poruka. Provjera potpisa odgovora vraća se kao `PotpisOdgovora`
-(`ISPRAVAN`, `NEISPRAVAN`, `NEPOUZDAN_CERTIFIKAT`, `NEDOSTAJE`); library ne odlučuje umjesto vas što s tim napraviti.
+(`ISPRAVAN`, `NEISPRAVAN`, `NEPOUZDAN_CERTIFIKAT`, `NEDOSTAJE`). `prihvacen()` je `true` samo uz `ISPRAVAN`.
 
 Iza korporativnog forward proxyja postavite ga s `Builder.proxy(ProxySelector.of(...))`.
 
