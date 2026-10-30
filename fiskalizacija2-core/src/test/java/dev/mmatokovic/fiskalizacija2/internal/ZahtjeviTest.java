@@ -16,6 +16,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,6 +81,15 @@ class ZahtjeviTest {
         assertEquals(List.of(), Xsd.greske(z.element()));
         assertEquals(List.of("brojDokumenta", "datumIzdavanja", "oibPorezniBrojIzdavatelja", "oibPorezniBrojPrimatelja",
                 "datumOdbijanja", "vrstaRazlogaOdbijanja", "razlogOdbijanja"), djeca(z.element(), "Odbijanje"));
+    }
+
+    @Test
+    void datumVrijemeSlanjaJeUZagrebuBezObziraNaZonuSata() {
+        var sat = Clock.fixed(Instant.parse("2026-07-02T09:30:15.005Z"), ZoneOffset.UTC);
+
+        var z = Zahtjevi.evidentirajNaplatu(List.of(naplata(BigDecimal.ONE)), sat);
+
+        assertEquals("2026-07-02T11:30:15.0050", tekst(z.element(), "datumVrijemeSlanja"));
     }
 
     @Test

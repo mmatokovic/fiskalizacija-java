@@ -2,11 +2,14 @@ package dev.mmatokovic.fiskalizacija2.internal;
 
 import dev.mmatokovic.fiskalizacija2.model.DokumentPopust;
 import dev.mmatokovic.fiskalizacija2.model.DokumentTrosak;
+import dev.mmatokovic.fiskalizacija2.model.DokumentUkupanIznos;
+import dev.mmatokovic.fiskalizacija2.model.Izdavatelj;
 import dev.mmatokovic.fiskalizacija2.model.KlasifikacijaArtikla;
 import dev.mmatokovic.fiskalizacija2.model.Naplata;
 import dev.mmatokovic.fiskalizacija2.model.Odbijanje;
 import dev.mmatokovic.fiskalizacija2.model.PrethodniRacun;
 import dev.mmatokovic.fiskalizacija2.model.PrijenosSredstava;
+import dev.mmatokovic.fiskalizacija2.model.Primatelj;
 import dev.mmatokovic.fiskalizacija2.model.Racun;
 import dev.mmatokovic.fiskalizacija2.model.RaspodjelaPdv;
 import dev.mmatokovic.fiskalizacija2.model.Stavka;
@@ -20,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +35,7 @@ public final class Zahtjevi {
     public static final String NS_EFIS = "http://www.porezna-uprava.gov.hr/fin/2024/types/eFiskalizacija";
     public static final String NS_EIZV = "http://www.porezna-uprava.gov.hr/fin/2024/types/eIzvjestavanje";
 
+    private static final ZoneId ZAGREB = ZoneId.of("Europe/Zagreb");
     private static final DateTimeFormatter DATUM_VRIJEME_SLANJA = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSS");
 
     private Zahtjevi() {
@@ -43,7 +48,7 @@ public final class Zahtjevi {
     public static Zahtjev evidentirajERacun(VrstaERacuna vrsta, List<Racun> racuni, Clock sat) {
         var z = novi(NS_EFIS, "efis", "EvidentirajERacunZahtjev");
         var zaglavlje = dodaj(z.element, NS_EFIS, "efis:Zaglavlje");
-        tekst(zaglavlje, "efis:datumVrijemeSlanja", LocalDateTime.now(sat).format(DATUM_VRIJEME_SLANJA));
+        tekst(zaglavlje, "efis:datumVrijemeSlanja", vrijemeSlanja(sat));
         tekst(zaglavlje, "efis:vrstaERacuna", vrsta.oznaka());
         racuni.forEach(r -> racun(z.element, "efis", r, true));
         return z;
@@ -52,7 +57,7 @@ public final class Zahtjevi {
     public static Zahtjev evidentirajIsporukuZaKojuNijeIzdanERacun(List<Racun> racuni, Clock sat) {
         var z = novi(NS_EIZV, "eizv", "EvidentirajIsporukuZaKojuNijeIzdanERacunZahtjev");
         var zaglavlje = dodaj(z.element, NS_EIZV, "eizv:Zaglavlje");
-        tekst(zaglavlje, "eizv:datumVrijemeSlanja", LocalDateTime.now(sat).format(DATUM_VRIJEME_SLANJA));
+        tekst(zaglavlje, "eizv:datumVrijemeSlanja", vrijemeSlanja(sat));
         tekst(zaglavlje, "eizv:vrstaRacuna", "IR");
         racuni.forEach(r -> racun(z.element, "eizv", r, false));
         return z;
@@ -61,7 +66,7 @@ public final class Zahtjevi {
     public static Zahtjev evidentirajNaplatu(List<Naplata> naplate, Clock sat) {
         var z = novi(NS_EIZV, "eizv", "EvidentirajNaplatuZahtjev");
         var zaglavlje = dodaj(z.element, NS_EIZV, "eizv:Zaglavlje");
-        tekst(zaglavlje, "eizv:datumVrijemeSlanja", LocalDateTime.now(sat).format(DATUM_VRIJEME_SLANJA));
+        tekst(zaglavlje, "eizv:datumVrijemeSlanja", vrijemeSlanja(sat));
         for (var n : naplate) {
             var el = dodaj(z.element, NS_EIZV, "eizv:Naplata");
             tekst(el, "eizv:brojDokumenta", n.brojDokumenta());
@@ -78,7 +83,7 @@ public final class Zahtjevi {
     public static Zahtjev evidentirajOdbijanje(List<Odbijanje> odbijanja, Clock sat) {
         var z = novi(NS_EIZV, "eizv", "EvidentirajOdbijanjeZahtjev");
         var zaglavlje = dodaj(z.element, NS_EIZV, "eizv:Zaglavlje");
-        tekst(zaglavlje, "eizv:datumVrijemeSlanja", LocalDateTime.now(sat).format(DATUM_VRIJEME_SLANJA));
+        tekst(zaglavlje, "eizv:datumVrijemeSlanja", vrijemeSlanja(sat));
         for (var o : odbijanja) {
             var el = dodaj(z.element, NS_EIZV, "eizv:Odbijanje");
             tekst(el, "eizv:brojDokumenta", o.brojDokumenta());
@@ -93,8 +98,7 @@ public final class Zahtjevi {
     }
 
     private static void racun(Element roditelj, String p, Racun r, boolean eRacun) {
-        String ns = roditelj.getNamespaceURI();
-        var el = dodaj(roditelj, ns, p + (eRacun ? ":ERacun" : ":Racun"));
+        var el = dodaj(roditelj, roditelj.getNamespaceURI(), p + (eRacun ? ":ERacun" : ":Racun"));
         tekst(el, p + ":brojDokumenta", r.brojDokumenta());
         tekst(el, p + ":datumIzdavanja", r.datumIzdavanja());
         tekst(el, p + ":vrstaDokumenta", r.vrstaDokumenta());
@@ -103,98 +107,116 @@ public final class Zahtjevi {
         tekst(el, p + ":vrstaPoslovnogProcesa", r.vrstaPoslovnogProcesa());
         tekst(el, p + ":referencaNaUgovor", r.referencaNaUgovor());
         tekst(el, p + ":datumIsporuke", r.datumIsporuke());
-        for (PrethodniRacun pr : r.prethodniRacuni()) {
-            var prEl = dodaj(el, ns, p + (eRacun ? ":PrethodniERacun" : ":PrethodniRacun"));
-            tekst(prEl, p + ":brojDokumenta", pr.brojDokumenta());
-            tekst(prEl, p + ":datumIzdavanja", pr.datumIzdavanja());
-        }
-
+        r.prethodniRacuni().forEach(pr -> prethodniRacun(el, p, pr, eRacun));
         if (r.izdavatelj() != null) {
-            var izdavatelj = dodaj(el, ns, p + ":Izdavatelj");
-            tekst(izdavatelj, p + ":ime", r.izdavatelj().ime());
-            tekst(izdavatelj, p + ":oibPorezniBroj", r.izdavatelj().oibPorezniBroj());
-            tekst(izdavatelj, p + ":oibOperatera", r.izdavatelj().oibOperatera());
+            izdavatelj(el, p, r.izdavatelj());
         }
-
         if (r.primatelj() != null) {
-            var primatelj = dodaj(el, ns, p + ":Primatelj");
-            tekst(primatelj, p + ":ime", r.primatelj().ime());
-            tekst(primatelj, p + ":oibPorezniBroj", r.primatelj().oibPorezniBroj());
+            primatelj(el, p, r.primatelj());
         }
-
-        for (PrijenosSredstava ps : r.prijenosiSredstava()) {
-            var psEl = dodaj(el, ns, p + ":PrijenosSredstava");
-            tekst(psEl, p + ":identifikatorRacunaZaPlacanje", ps.identifikatorRacunaZaPlacanje());
-            tekst(psEl, p + ":nazivRacunaZaPlacanje", ps.nazivRacunaZaPlacanje());
-            tekst(psEl, p + ":identifikatorPruzateljaPlatnihUsluga", ps.identifikatorPruzateljaPlatnihUsluga());
+        r.prijenosiSredstava().forEach(ps -> prijenosSredstava(el, p, ps));
+        if (r.ukupanIznos() != null) {
+            ukupanIznos(el, p, r.ukupanIznos());
         }
-
-        var u = r.ukupanIznos();
-        if (u != null) {
-            var ukupno = dodaj(el, ns, p + ":DokumentUkupanIznos");
-            tekst(ukupno, p + ":neto", iznos(u.neto()));
-            tekst(ukupno, p + ":popust", iznos(u.popust()));
-            tekst(ukupno, p + ":trosak", iznos(u.trosak()));
-            tekst(ukupno, p + ":iznosBezPdv", iznos(u.iznosBezPdv()));
-            tekst(ukupno, p + ":pdv", iznos(u.pdv()));
-            tekst(ukupno, p + ":iznosSPdv", iznos(u.iznosSPdv()));
-            tekst(ukupno, p + ":placeniIznos", iznos(u.placeniIznos()));
-            tekst(ukupno, p + ":iznosKojiDospijevaZaPlacanje", iznos(u.iznosKojiDospijevaZaPlacanje()));
-        }
-
-        for (RaspodjelaPdv rp : r.raspodjelaPdv()) {
-            var rpEl = dodaj(el, ns, p + ":RaspodjelaPdv");
-            tekst(rpEl, p + ":kategorijaPdv", rp.kategorijaPdv());
-            tekst(rpEl, p + ":oporeziviIznos", iznos(rp.oporeziviIznos()));
-            tekst(rpEl, p + ":iznosPoreza", iznos(rp.iznosPoreza()));
-            tekst(rpEl, p + ":stopa", rp.stopa());
-            tekst(rpEl, p + ":razlogOslobodenja", rp.razlogOslobodenja());
-            tekst(rpEl, p + ":tekstRazlogaOslobodenja", rp.tekstRazlogaOslobodenja());
-            tekst(rpEl, p + ":hrOznakaKategorijaPdv", rp.hrOznakaKategorijaPdv());
-        }
-
-        for (DokumentPopust dp : r.popusti()) {
-            var dpEl = dodaj(el, ns, p + ":DokumentPopust");
-            tekst(dpEl, p + ":iznosPopust", iznos(dp.iznosPopust()));
-            tekst(dpEl, p + ":kategorijaPdv", dp.kategorijaPdv());
-            tekst(dpEl, p + ":stopaPdv", dp.stopaPdv());
-            tekst(dpEl, p + ":tekstRazlogaPopusta", dp.tekstRazlogaPopusta());
-            tekst(dpEl, p + ":razlogPopusta", dp.razlogPopusta());
-        }
-
-        for (DokumentTrosak dt : r.troskovi()) {
-            var dtEl = dodaj(el, ns, p + ":DokumentTrosak");
-            tekst(dtEl, p + ":iznosTrosak", iznos(dt.iznosTrosak()));
-            tekst(dtEl, p + ":kategorijaPdv", dt.kategorijaPdv());
-            tekst(dtEl, p + ":hrOznakaPorezneKategorije", dt.hrOznakaPorezneKategorije());
-            tekst(dtEl, p + ":stopaPdv", dt.stopaPdv());
-            tekst(dtEl, p + ":tekstRazlogaOslobodenjaPdv", dt.tekstRazlogaOslobodenjaPdv());
-            tekst(dtEl, p + ":razlogOslobodenjaPdv", dt.razlogOslobodenjaPdv());
-        }
-
-        for (Stavka s : r.stavke()) {
-            var sEl = dodaj(el, ns, p + (eRacun ? ":StavkaERacuna" : ":StavkaRacuna"));
-            tekst(sEl, p + ":kolicina", s.kolicina());
-            tekst(sEl, p + ":jedinicaMjere", s.jedinicaMjere());
-            tekst(sEl, p + ":neto", iznos(s.neto()));
-            tekst(sEl, p + ":artiklNetoCijena", s.artiklNetoCijena());
-            tekst(sEl, p + ":artiklBrutoCijena", s.artiklBrutoCijena());
-            tekst(sEl, p + ":artiklOsnovnaKolicina", s.artiklOsnovnaKolicina());
-            tekst(sEl, p + ":artiklJedinicaMjereZaOsnovnuKolicinu", s.artiklJedinicaMjereZaOsnovnuKolicinu());
-            tekst(sEl, p + ":artiklKategorijaPdv", s.artiklKategorijaPdv());
-            tekst(sEl, p + ":artiklStopaPdv", s.artiklStopaPdv());
-            tekst(sEl, p + ":artiklNaziv", s.artiklNaziv());
-            tekst(sEl, p + ":artiklOpis", s.artiklOpis());
-            tekst(sEl, p + ":artiklHrOznakaKategorijaPdv", s.artiklHrOznakaKategorijaPdv());
-            for (KlasifikacijaArtikla k : s.klasifikacije()) {
-                var kEl = dodaj(sEl, ns, p + ":ArtiklIdentifikatorKlasifikacija");
-                tekst(kEl, p + ":identifikatorKlasifikacije", k.identifikatorKlasifikacije());
-                tekst(kEl, p + ":identifikatorSheme", k.identifikatorSheme());
-                tekst(kEl, p + ":verzijaSheme", k.verzijaSheme());
-            }
-        }
-
+        r.raspodjelaPdv().forEach(rp -> raspodjelaPdv(el, p, rp));
+        r.popusti().forEach(dp -> popust(el, p, dp));
+        r.troskovi().forEach(dt -> trosak(el, p, dt));
+        r.stavke().forEach(st -> stavka(el, p, st, eRacun));
         tekst(el, p + ":indikatorKopije", r.indikatorKopije());
+    }
+
+    private static void prethodniRacun(Element racun, String p, PrethodniRacun pr, boolean eRacun) {
+        var el = dodaj(racun, racun.getNamespaceURI(), p + (eRacun ? ":PrethodniERacun" : ":PrethodniRacun"));
+        tekst(el, p + ":brojDokumenta", pr.brojDokumenta());
+        tekst(el, p + ":datumIzdavanja", pr.datumIzdavanja());
+    }
+
+    private static void izdavatelj(Element racun, String p, Izdavatelj i) {
+        var el = dodaj(racun, racun.getNamespaceURI(), p + ":Izdavatelj");
+        tekst(el, p + ":ime", i.ime());
+        tekst(el, p + ":oibPorezniBroj", i.oibPorezniBroj());
+        tekst(el, p + ":oibOperatera", i.oibOperatera());
+    }
+
+    private static void primatelj(Element racun, String p, Primatelj pr) {
+        var el = dodaj(racun, racun.getNamespaceURI(), p + ":Primatelj");
+        tekst(el, p + ":ime", pr.ime());
+        tekst(el, p + ":oibPorezniBroj", pr.oibPorezniBroj());
+    }
+
+    private static void prijenosSredstava(Element racun, String p, PrijenosSredstava ps) {
+        var el = dodaj(racun, racun.getNamespaceURI(), p + ":PrijenosSredstava");
+        tekst(el, p + ":identifikatorRacunaZaPlacanje", ps.identifikatorRacunaZaPlacanje());
+        tekst(el, p + ":nazivRacunaZaPlacanje", ps.nazivRacunaZaPlacanje());
+        tekst(el, p + ":identifikatorPruzateljaPlatnihUsluga", ps.identifikatorPruzateljaPlatnihUsluga());
+    }
+
+    private static void ukupanIznos(Element racun, String p, DokumentUkupanIznos u) {
+        var el = dodaj(racun, racun.getNamespaceURI(), p + ":DokumentUkupanIznos");
+        tekst(el, p + ":neto", iznos(u.neto()));
+        tekst(el, p + ":popust", iznos(u.popust()));
+        tekst(el, p + ":trosak", iznos(u.trosak()));
+        tekst(el, p + ":iznosBezPdv", iznos(u.iznosBezPdv()));
+        tekst(el, p + ":pdv", iznos(u.pdv()));
+        tekst(el, p + ":iznosSPdv", iznos(u.iznosSPdv()));
+        tekst(el, p + ":placeniIznos", iznos(u.placeniIznos()));
+        tekst(el, p + ":iznosKojiDospijevaZaPlacanje", iznos(u.iznosKojiDospijevaZaPlacanje()));
+    }
+
+    private static void raspodjelaPdv(Element racun, String p, RaspodjelaPdv rp) {
+        var el = dodaj(racun, racun.getNamespaceURI(), p + ":RaspodjelaPdv");
+        tekst(el, p + ":kategorijaPdv", rp.kategorijaPdv());
+        tekst(el, p + ":oporeziviIznos", iznos(rp.oporeziviIznos()));
+        tekst(el, p + ":iznosPoreza", iznos(rp.iznosPoreza()));
+        tekst(el, p + ":stopa", rp.stopa());
+        tekst(el, p + ":razlogOslobodenja", rp.razlogOslobodenja());
+        tekst(el, p + ":tekstRazlogaOslobodenja", rp.tekstRazlogaOslobodenja());
+        tekst(el, p + ":hrOznakaKategorijaPdv", rp.hrOznakaKategorijaPdv());
+    }
+
+    private static void popust(Element racun, String p, DokumentPopust dp) {
+        var el = dodaj(racun, racun.getNamespaceURI(), p + ":DokumentPopust");
+        tekst(el, p + ":iznosPopust", iznos(dp.iznosPopust()));
+        tekst(el, p + ":kategorijaPdv", dp.kategorijaPdv());
+        tekst(el, p + ":stopaPdv", dp.stopaPdv());
+        tekst(el, p + ":tekstRazlogaPopusta", dp.tekstRazlogaPopusta());
+        tekst(el, p + ":razlogPopusta", dp.razlogPopusta());
+    }
+
+    private static void trosak(Element racun, String p, DokumentTrosak dt) {
+        var el = dodaj(racun, racun.getNamespaceURI(), p + ":DokumentTrosak");
+        tekst(el, p + ":iznosTrosak", iznos(dt.iznosTrosak()));
+        tekst(el, p + ":kategorijaPdv", dt.kategorijaPdv());
+        tekst(el, p + ":hrOznakaPorezneKategorije", dt.hrOznakaPorezneKategorije());
+        tekst(el, p + ":stopaPdv", dt.stopaPdv());
+        tekst(el, p + ":tekstRazlogaOslobodenjaPdv", dt.tekstRazlogaOslobodenjaPdv());
+        tekst(el, p + ":razlogOslobodenjaPdv", dt.razlogOslobodenjaPdv());
+    }
+
+    private static void stavka(Element racun, String p, Stavka s, boolean eRacun) {
+        var el = dodaj(racun, racun.getNamespaceURI(), p + (eRacun ? ":StavkaERacuna" : ":StavkaRacuna"));
+        tekst(el, p + ":kolicina", s.kolicina());
+        tekst(el, p + ":jedinicaMjere", s.jedinicaMjere());
+        tekst(el, p + ":neto", iznos(s.neto()));
+        tekst(el, p + ":artiklNetoCijena", s.artiklNetoCijena());
+        tekst(el, p + ":artiklBrutoCijena", s.artiklBrutoCijena());
+        tekst(el, p + ":artiklOsnovnaKolicina", s.artiklOsnovnaKolicina());
+        tekst(el, p + ":artiklJedinicaMjereZaOsnovnuKolicinu", s.artiklJedinicaMjereZaOsnovnuKolicinu());
+        tekst(el, p + ":artiklKategorijaPdv", s.artiklKategorijaPdv());
+        tekst(el, p + ":artiklStopaPdv", s.artiklStopaPdv());
+        tekst(el, p + ":artiklNaziv", s.artiklNaziv());
+        tekst(el, p + ":artiklOpis", s.artiklOpis());
+        tekst(el, p + ":artiklHrOznakaKategorijaPdv", s.artiklHrOznakaKategorijaPdv());
+        for (KlasifikacijaArtikla k : s.klasifikacije()) {
+            var kEl = dodaj(el, el.getNamespaceURI(), p + ":ArtiklIdentifikatorKlasifikacija");
+            tekst(kEl, p + ":identifikatorKlasifikacije", k.identifikatorKlasifikacije());
+            tekst(kEl, p + ":identifikatorSheme", k.identifikatorSheme());
+            tekst(kEl, p + ":verzijaSheme", k.verzijaSheme());
+        }
+    }
+
+    private static String vrijemeSlanja(Clock sat) {
+        return LocalDateTime.ofInstant(sat.instant(), ZAGREB).format(DATUM_VRIJEME_SLANJA);
     }
 
     private static Zahtjev novi(String ns, String prefiks, String ime) {
