@@ -36,7 +36,10 @@ Releases are cut from `main` with a tag; the version comes from the tag, so noth
    ```
 
 3. The `release` workflow checks that the tag is on `main` and that the changelog has the version, then builds,
-   signs and publishes to Maven Central and creates the GitHub release with that changelog section.
+   signs and uploads to Maven Central and creates a draft GitHub release with that changelog section.
+4. In the Central Portal (Deployments), check the validated deployment and press **Publish**. A published version
+   can never be removed from Maven Central.
+5. Once it is on Maven Central, publish the draft GitHub release.
 
 The workflow needs the repository secrets `CENTRAL_USERNAME`, `CENTRAL_TOKEN` (a Central Portal user token),
 `GPG_PRIVATE_KEY` and `GPG_PASSPHRASE`. It runs in the `release` environment, where a required reviewer can be added.
