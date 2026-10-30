@@ -13,6 +13,7 @@ import javax.xml.validation.SchemaFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /** Provjera poruke prema službenim XSD shemama Porezne uprave (eFiskalizacija i eIzvjestavanje), ugrađenim u library. */
 public final class Xsd {
@@ -52,10 +53,14 @@ public final class Xsd {
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "file,jar");
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             return sf.newSchema(new StreamSource[]{
-                    new StreamSource(Xsd.class.getResource("xsd/eFiskalizacijaSchema.xsd").toExternalForm()),
-                    new StreamSource(Xsd.class.getResource("xsd/eIzvjestavanjeSchema.xsd").toExternalForm())});
+                    new StreamSource(resurs("xsd/eFiskalizacijaSchema.xsd")),
+                    new StreamSource(resurs("xsd/eIzvjestavanjeSchema.xsd"))});
         } catch (SAXException e) {
             throw new IllegalStateException("Ne mogu učitati ugrađene XSD sheme", e);
         }
+    }
+
+    private static String resurs(String ime) {
+        return Objects.requireNonNull(Xsd.class.getResource(ime), () -> "Nedostaje ugrađena shema " + ime).toExternalForm();
     }
 }

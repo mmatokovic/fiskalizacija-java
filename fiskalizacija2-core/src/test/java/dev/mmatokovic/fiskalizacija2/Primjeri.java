@@ -10,6 +10,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public final class Primjeri {
@@ -68,7 +69,7 @@ public final class Primjeri {
 
     private static Path putanja(String resurs) {
         try {
-            return Path.of(Primjeri.class.getResource(resurs).toURI());
+            return Path.of(Objects.requireNonNull(Primjeri.class.getResource(resurs), () -> "Nedostaje test resurs " + resurs).toURI());
         } catch (URISyntaxException e) {
             throw new IllegalStateException(e);
         }
