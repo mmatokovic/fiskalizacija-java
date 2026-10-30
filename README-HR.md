@@ -73,6 +73,16 @@ analizu odbijenih poruka. Provjera potpisa odgovora vraća se kao `PotpisOdgovor
 Library ne drži stanje ni bazu. Za pouzdano slanje koristite outbox obrazac: spremite račun i poruku u istoj
 transakciji, pošaljite, spremite odgovor, a neuspjela slanja ponavljajte u zakonskim rokovima.
 
+## Provjera spremljenog odgovora
+
+Potpis odgovora može se ponovno provjeriti i kasnije, npr. kod poreznog nadzora, iz spremljenog `soapOdgovor`.
+Proslijedite trenutak primitka odgovora: lanac certifikata provjerava se na taj trenutak, jer je certifikat
+Porezne u međuvremenu možda istekao.
+
+```java
+PotpisOdgovora potpis = client.provjeriOdgovor(arhiva.soapOdgovor(), arhiva.primljeno());
+```
+
 ## Ulazni eRačuni
 
 Za račune koje ne kontrolirate postoji tolerantno čitanje: greške se skupljaju, a polja koja se nisu mogla

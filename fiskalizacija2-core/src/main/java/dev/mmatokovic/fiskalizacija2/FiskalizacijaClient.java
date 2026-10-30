@@ -24,6 +24,7 @@ import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
@@ -205,6 +206,42 @@ public final class FiskalizacijaClient {
                     + " (HTTP " + status + ")", status, tijelo, null);
         }
         return new Rezultat(zahtjev.id(), o, ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici), status, soap, tijelo);
+    }
+
+    /**
+     * Provjerava potpis spremljenog odgovora, npr. iz arhive kod poreznog nadzora, s povjerljivim certifikatima
+     * ovog klijenta. Potpis mora pokrivati jedini element u SOAP tijelu.
+     *
+     * @param soapOdgovor odgovor točno onako kako je primljen ({@link Rezultat#soapOdgovor()})
+     * @param primljen    kad je odgovor primljen; lanac certifikata provjerava se na taj trenutak, jer certifikat
+     *                    Porezne do provjere iz arhive može isteći
+     * @throws IllegalArgumentException ako odgovor nije XML
+     */
+    public PotpisOdgovora provjeriOdgovor(String soapOdgovor, Instant primljen) {
+        Objects.requireNonNull(primljen, "primljen");
+        Document dokument;
+        try {
+            dokument = Xml.parsiraj(soapOdgovor);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Odgovor nije XML: " + e.getMessage(), e);
+        }
+        var tijela = dokument.getElementsByTagNameNS(Zahtjevi.NS_SOAP, "Body");
+        if (tijela.getLength() != 1) {
+            return PotpisOdgovora.NEISPRAVAN;
+        }
+        Element odgovorEl = null;
+        for (var n = tijela.item(0).getFirstChild(); n != null; n = n.getNextSibling()) {
+            if (n instanceof Element e) {
+                if (odgovorEl != null) {
+                    return PotpisOdgovora.NEISPRAVAN;
+                }
+                odgovorEl = e;
+            }
+        }
+        if (odgovorEl == null) {
+            return PotpisOdgovora.NEISPRAVAN;
+        }
+        return ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici, primljen);
     }
 
     static Odgovor odgovor(Element odgovorElement) {

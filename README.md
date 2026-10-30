@@ -78,6 +78,16 @@ analysing rejected messages. The response signature check is returned as `Potpis
 The library keeps no state and no database. For reliable delivery use the outbox pattern: store the invoice and the
 message in one transaction, send, store the response, and retry failed sends within the legal deadlines.
 
+## Checking an archived response
+
+The response signature can be checked again later, for example during a tax audit, from the archived
+`soapOdgovor`. Pass the time the response was received: the certificate chain is checked as of that moment,
+because the Porezna certificate may have expired since.
+
+```java
+PotpisOdgovora potpis = client.provjeriOdgovor(archived.soapOdgovor(), archived.receivedAt());
+```
+
 ## Received eRačun
 
 For invoices you don't control there is lenient parsing: errors are collected and fields that could not be read

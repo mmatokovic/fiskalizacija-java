@@ -29,8 +29,10 @@ import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -65,6 +67,14 @@ public final class ProvjeraPotpisa {
      * @param potpisani element čiji se sadržaj koristi (npr. {@code EvidentirajNaplatuOdgovor}); potpis je njegovo dijete
      */
     public static PotpisOdgovora provjeri(Element potpisani, Set<TrustAnchor> sidra, Collection<X509Certificate> posrednici) {
+        return provjeri(potpisani, sidra, posrednici, null);
+    }
+
+    /**
+     * @param trenutak trenutak na koji se provjerava valjanost lanca certifikata, ili {@code null} za sada
+     */
+    public static PotpisOdgovora provjeri(Element potpisani, Set<TrustAnchor> sidra, Collection<X509Certificate> posrednici,
+            Instant trenutak) {
         var signatureEl = potpis(potpisani);
         if (signatureEl == null) {
             return PotpisOdgovora.NEDOSTAJE;
@@ -122,6 +132,9 @@ public final class ProvjeraPotpisa {
             cilj.setCertificate(potpisnik[0]);
             var parametri = new PKIXBuilderParameters(sidra, cilj);
             parametri.setRevocationEnabled(false);
+            if (trenutak != null) {
+                parametri.setDate(Date.from(trenutak));
+            }
             var certifikati = new ArrayList<X509Certificate>(posrednici);
             certifikati.add(potpisnik[0]);
             parametri.addCertStore(CertStore.getInstance("Collection", new CollectionCertStoreParameters(certifikati)));

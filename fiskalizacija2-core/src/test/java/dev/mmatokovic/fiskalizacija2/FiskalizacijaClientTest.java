@@ -17,10 +17,16 @@ import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.cert.TrustAnchor;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -33,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FiskalizacijaClientTest {
 
     private final Potpisivac potpisivac = Primjeri.potpisivac();
+    private Potpisivac potpisivacOdgovora = potpisivac;
     private final List<String> primljeno = new ArrayList<>();
     private final List<String> contentType = new ArrayList<>();
     private HttpServer server;
@@ -233,6 +240,46 @@ class FiskalizacijaClientTest {
         assertFalse(r.prihvacen());
     }
 
+    @Test
+    void potpisSpremljenogOdgovoraSeMozeProvjeritiKasnije() {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
+        var arhiva = client().evidentirajNaplatu(naplata()).soapOdgovor();
+
+        assertEquals(PotpisOdgovora.ISPRAVAN, client().provjeriOdgovor(arhiva, Instant.now()));
+        assertEquals(PotpisOdgovora.NEISPRAVAN, client().provjeriOdgovor(
+                arhiva.replace(">true</eizv:prihvacenZahtjev>", ">false</eizv:prihvacenZahtjev>"), Instant.now()));
+        assertEquals(PotpisOdgovora.NEISPRAVAN, client().provjeriOdgovor(arhiva.replace("<soapenv:Body>", "<soapenv:Body>"
+                + odgovorElement("EvidentirajNaplatuOdgovor", "lazni", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>")),
+                Instant.now()));
+    }
+
+    @Test
+    void lanacSpremljenogOdgovoraProvjeravaSeNaTrenutakPrimitka() throws Exception {
+        // Potpisnik odgovora izdan je pod testnim CA i vrijedio je samo u siječnju 2026.
+        var ks = KeyStore.getInstance("PKCS12");
+        try (var in = Primjeri.class.getResourceAsStream("/test-lanac.p12")) {
+            ks.load(in, "test1234".toCharArray());
+        }
+        potpisivacOdgovora = new Potpisivac((PrivateKey) ks.getKey("potpisnik", "test1234".toCharArray()),
+                (X509Certificate) ks.getCertificate("potpisnik"));
+        var ca = new TrustAnchor((X509Certificate) ks.getCertificate("ca"), null);
+        var c = builder().povjerljiviCertifikati(Set.of(ca), List.of()).build();
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
+        var arhiva = c.evidentirajNaplatu(naplata()).soapOdgovor();
+
+        assertEquals(PotpisOdgovora.ISPRAVAN, c.provjeriOdgovor(arhiva, Instant.parse("2026-01-15T10:00:00Z")));
+        assertEquals(PotpisOdgovora.NEPOUZDAN_CERTIFIKAT, c.provjeriOdgovor(arhiva, Instant.now()));
+    }
+
+    @Test
+    void provjeraSpremljenogOdgovoraBezPotpisaIliKojiNijeXml() {
+        assertEquals(PotpisOdgovora.NEDOSTAJE, client().provjeriOdgovor(
+                odgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>"), Instant.now()));
+        assertThrows(IllegalArgumentException.class, () -> client().provjeriOdgovor("<html>", Instant.now()));
+    }
+
     private FiskalizacijaClient client() {
         return builder().build();
     }
@@ -273,7 +320,7 @@ class FiskalizacijaClientTest {
         try {
             var doc = Xml.parsiraj(xml);
             var el = (org.w3c.dom.Element) doc.getElementsByTagNameNS(Zahtjevi.NS_EIZV, element).item(0);
-            potpisivac.potpisi(el, el.getAttributeNS(Zahtjevi.NS_EIZV, "id"));
+            potpisivacOdgovora.potpisi(el, el.getAttributeNS(Zahtjevi.NS_EIZV, "id"));
             return Xml.serijaliziraj(doc);
         } catch (Exception e) {
             throw new IllegalStateException(e);
