@@ -139,7 +139,7 @@ class FiskalizacijaClientTest {
 
         assertEquals(500, e.httpStatus());
         assertEquals(odgovor, e.soapOdgovor());
-        assertTrue(e.getMessage().contains("EvidentirajNaplatuOdgovor"));
+        assertTrue(e.getMessage().contains("SOAP Fault: Greska"), e.getMessage());
     }
 
     @Test
@@ -323,6 +323,18 @@ class FiskalizacijaClientTest {
         var c = client();
 
         assertTrue(c.posalji(c.pripremiNaplatu(List.of(naplata()))).prihvacen());
+    }
+
+    @Test
+    void neispravanRedniBrojZapisaJeFiskalizacijskaIznimka() {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>false</eizv:prihvacenZahtjev>"
+                + "<eizv:greska><eizv:sifra>S009</eizv:sifra><eizv:redniBrojZapisa>prvi</eizv:redniBrojZapisa>"
+                + "<eizv:opis>x</eizv:opis></eizv:greska>");
+
+        var e = assertThrows(FiskalizacijaException.class, () -> client().evidentirajNaplatu(naplata()));
+
+        assertTrue(e.getMessage().contains("redniBrojZapisa"), e.getMessage());
     }
 
     private FiskalizacijaClient client() {

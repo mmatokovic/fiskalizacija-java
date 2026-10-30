@@ -232,12 +232,25 @@ public final class FiskalizacijaClient {
             throw new FiskalizacijaException("Odgovor nije XML (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, e);
         }
         var el = dokument.getElementsByTagNameNS("*", odgovorElement);
+        if (el.getLength() == 0) {
+            var fault = dokument.getElementsByTagNameNS(Zahtjevi.NS_SOAP, "Fault");
+            if (fault.getLength() > 0) {
+                String opis = tekst((Element) fault.item(0), "faultstring");
+                throw new FiskalizacijaException("SOAP Fault: " + opis + " (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
+            }
+        }
         if (el.getLength() != 1) {
             throw new FiskalizacijaException("Odgovor mora sadržavati točno jedan " + odgovorElement + ", a sadrži "
                     + el.getLength() + " (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
         }
         var odgovorEl = (Element) el.item(0);
-        var o = odgovor(odgovorEl);
+        Odgovor o;
+        try {
+            o = odgovor(odgovorEl);
+        } catch (NumberFormatException e) {
+            throw new FiskalizacijaException("Neispravan redniBrojZapisa u odgovoru (HTTP " + httpStatus + ")",
+                    httpStatus, soapOdgovor, e);
+        }
         if (o == null) {
             throw new FiskalizacijaException(odgovorElement + " ne sadrži element Odgovor (HTTP " + httpStatus + ")",
                     httpStatus, soapOdgovor, null);
