@@ -9,6 +9,7 @@ public class UblException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @SuppressWarnings("serial")
     private final List<String> greske;
 
     public UblException(List<String> greske) {

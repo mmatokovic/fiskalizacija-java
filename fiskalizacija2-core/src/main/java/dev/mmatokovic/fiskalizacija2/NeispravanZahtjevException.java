@@ -9,6 +9,7 @@ public class NeispravanZahtjevException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @SuppressWarnings("serial")
     private final List<String> greske;
 
     public NeispravanZahtjevException(List<String> greske) {
