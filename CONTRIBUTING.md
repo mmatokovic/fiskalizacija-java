@@ -26,8 +26,8 @@ Only JDK 17+ is required; the wrapper downloads Maven. Unit tests need no networ
 
 Releases are cut from `main` with a tag; the version comes from the tag, so nothing is committed back.
 
-1. In a pull request, rename `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD` and add a new empty
-   `## [Unreleased]` above it. Merge it.
+1. Rename `## [Unreleased]` in `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD`, add a new empty `## [Unreleased]`
+   above it, and commit to `main`.
 2. Tag the merge commit on `main` and push the tag:
 
    ```bash
