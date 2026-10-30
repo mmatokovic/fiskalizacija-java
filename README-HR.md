@@ -61,14 +61,18 @@ client.evidentirajNaplatu(new Naplata("1-P1-1", LocalDate.of(2026, 3, 1), "12345
 |---|---|
 | Porezna prihvati zahtjev | `Rezultat` s `prihvacen() == true` |
 | Porezna odbije zahtjev (poslovna greška, npr. `S009`) | `Rezultat` s `prihvacen() == false` i `greska()` |
-| Zahtjev ne prolazi XSD shemu | `NeispravanZahtjevException`, ništa se ne šalje |
+| Zahtjev ne prolazi XSD shemu ili iznos ima više od dvije decimale | `NeispravanZahtjevException`, ništa se ne šalje |
 | UBL nema obvezna polja | `UblException` sa **svim** pronađenim greškama |
 | Mreža, timeout, SOAP Fault, odgovor koji nije XML | `FiskalizacijaException` s HTTP statusom i sirovim odgovorom |
-| Odgovor za drugi `idZahtjeva` ili s više elemenata odgovora | `FiskalizacijaException` (mogući napad ili greška posrednika) |
+| Odgovor bez `idZahtjeva`, za drugi `idZahtjeva` ili s više elemenata odgovora | `FiskalizacijaException` (mogući napad ili greška posrednika) |
+| Potpisivanje ne uspije, npr. ključ koji nije RSA ni EC | `IllegalStateException` |
+| `null` argument | `NullPointerException` |
 
 `Rezultat` uvijek sadrži sirovi potpisani zahtjev i odgovor (`soapZahtjev`, `soapOdgovor`), za arhivu i za
 analizu odbijenih poruka. Provjera potpisa odgovora vraća se kao `PotpisOdgovora`
 (`ISPRAVAN`, `NEISPRAVAN`, `NEPOUZDAN_CERTIFIKAT`, `NEDOSTAJE`); library ne odlučuje umjesto vas što s tim napraviti.
+
+Iza korporativnog forward proxyja postavite ga s `Builder.proxy(ProxySelector.of(...))`.
 
 Library ne drži stanje ni bazu. Za pouzdano slanje koristite outbox obrazac: spremite račun i poruku u istoj
 transakciji, pošaljite, spremite odgovor, a neuspjela slanja ponavljajte u zakonskim rokovima.
@@ -84,7 +88,8 @@ HttpResponse<String> http = mojHttpKlijent.post(zahtjev.soap());
 Rezultat r = client.obradiOdgovor(zahtjev, http.statusCode(), http.body());
 ```
 
-`zahtjev.soap()` šaljite bez izmjena, inače potpis više ne vrijedi.
+`zahtjev.soap()` šaljite bez izmjena, inače potpis više ne vrijedi, kao HTTP `POST` s headerima
+`Content-Type: application/xml; charset=utf-8` i `SOAPAction: ""`.
 
 ## Provjera spremljenog odgovora
 
@@ -116,8 +121,9 @@ Ove odluke treba potvrditi na testnom okruženju:
 4. Objavljeni primjeri odgovora potpisani su RSA-SHA1, a JDK-ov `secureValidation` SHA-1 odbija i ne može se
    dopustiti samo za jedan kontekst. Zato je isključen, a njegova bitna pravila provjeravaju se eksplicitno: samo
    reference unutar dokumenta, popis dopuštenih algoritama i transformacija, RSA ključ od najmanje 2048 bita.
-5. Provjera potpisa odgovora prihvaća bilo koji certifikat izdan pod FINA CA. Treba vidjeti kojim certifikatom
-   Porezna stvarno potpisuje odgovore i dodati provjeru subjekta.
+5. Svaki porezni obveznik ima FINA certifikat, pa ispravan lanac nije dovoljan. Zadano subjekt potpisnika odgovora
+   mora sadržavati OIB Ministarstva financija (`18683136487`), kakav ima i Poreznin TLS certifikat. Ako Porezna
+   odgovore potpisuje drugim certifikatom, postavite vlastitu provjeru s `Builder.potpisnikOdgovora(...)`.
 
 ## Što još nije napravljeno
 

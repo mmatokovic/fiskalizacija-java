@@ -66,14 +66,18 @@ client.evidentirajNaplatu(new Naplata("1-P1-1", LocalDate.of(2026, 3, 1), "12345
 |---|---|
 | Porezna accepts the request | `Rezultat` with `prihvacen() == true` |
 | Porezna rejects the request (business error, e.g. `S009`) | `Rezultat` with `prihvacen() == false` and `greska()` |
-| The request fails the XSD schema | `NeispravanZahtjevException`, nothing is sent |
+| The request fails the XSD schema, or an amount has more than two decimals | `NeispravanZahtjevException`, nothing is sent |
 | The UBL lacks mandatory fields | `UblException` with **all** errors found |
 | Network, timeout, SOAP Fault, response that is not XML | `FiskalizacijaException` with HTTP status and raw response |
-| Response for a different `idZahtjeva` or with several response elements | `FiskalizacijaException` (possible attack or a broken intermediary) |
+| Response without `idZahtjeva`, for a different one, or with several response elements | `FiskalizacijaException` (possible attack or a broken intermediary) |
+| Signing fails, e.g. a key that is neither RSA nor EC | `IllegalStateException` |
+| A `null` argument | `NullPointerException` |
 
 `Rezultat` always holds the raw signed request and response (`soapZahtjev`, `soapOdgovor`) for archiving and for
 analysing rejected messages. The response signature check is returned as `PotpisOdgovora`
 (`ISPRAVAN`, `NEISPRAVAN`, `NEPOUZDAN_CERTIFIKAT`, `NEDOSTAJE`); the library does not decide for you what to do with it.
+
+Behind a corporate forward proxy, set it with `Builder.proxy(ProxySelector.of(...))`.
 
 The library keeps no state and no database. For reliable delivery use the outbox pattern: store the invoice and the
 message in one transaction, send, store the response, and retry failed sends within the legal deadlines.
@@ -89,7 +93,8 @@ HttpResponse<String> http = myHttpClient.post(zahtjev.soap());
 Rezultat r = client.obradiOdgovor(zahtjev, http.statusCode(), http.body());
 ```
 
-Send `zahtjev.soap()` unchanged, otherwise the signature is no longer valid.
+Send `zahtjev.soap()` unchanged, otherwise the signature is no longer valid, as an HTTP `POST` with the headers
+`Content-Type: application/xml; charset=utf-8` and `SOAPAction: ""`.
 
 ## Checking an archived response
 
@@ -121,8 +126,9 @@ These choices need confirming on the test environment:
 4. The published response examples are signed with RSA-SHA1, which the JDK's `secureValidation` rejects and which
    cannot be allowed for a single context. It is therefore off, and its relevant rules are checked explicitly:
    same-document references only, an allow-list of algorithms and transforms, RSA keys of at least 2048 bits.
-5. The response signature check accepts any certificate issued under the FINA CA. We need to see which certificate
-   Porezna actually signs responses with and add a subject check.
+5. Every taxpayer has a FINA certificate, so a valid chain is not enough. By default the response signer's subject
+   must contain the OIB of the Ministry of Finance (`18683136487`), which Porezna's TLS certificate carries. If Porezna
+   signs responses with a different certificate, set your own check with `Builder.potpisnikOdgovora(...)`.
 
 ## Not done yet
 
