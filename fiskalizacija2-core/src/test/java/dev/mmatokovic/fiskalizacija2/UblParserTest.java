@@ -110,6 +110,53 @@ class UblParserTest {
     }
 
     @Test
+    void ukupniPdvSeCitaIzTaxTotalUValutiRacuna() {
+        String xml = new String(Primjeri.eRacun("eRacun_PDV25.xml"), StandardCharsets.UTF_8)
+                .replaceFirst("<cac:TaxTotal>", "<cac:TaxTotal><cbc:TaxAmount currencyID=\"USD\">999.99</cbc:TaxAmount></cac:TaxTotal><cac:TaxTotal>");
+        var izvorni = UblParser.racun(Primjeri.eRacun("eRacun_PDV25.xml"));
+
+        var r = UblParser.racun(xml.getBytes(StandardCharsets.UTF_8));
+
+        assertEquals(izvorni.ukupanIznos().pdv(), r.ukupanIznos().pdv());
+    }
+
+    @Test
+    void uzimajuSeSamoKpdKlasifikacije() {
+        String xml = new String(Primjeri.eRacun("eRacun_PDV25.xml"), StandardCharsets.UTF_8)
+                .replaceFirst("<cac:CommodityClassification>", "<cac:CommodityClassification><cbc:ItemClassificationCode listID=\"STI\">43211503</cbc:ItemClassificationCode></cac:CommodityClassification><cac:CommodityClassification>");
+
+        var r = UblParser.racun(xml.getBytes(StandardCharsets.UTF_8));
+
+        assertTrue(r.stavke().stream().flatMap(st -> st.klasifikacije().stream()).allMatch(k -> "CG".equals(k.identifikatorSheme())));
+    }
+
+    @Test
+    void chargeIndicatorPrihvacaJedinicuINulu() {
+        var izvorni = UblParser.racun(Primjeri.eRacun("eRacun_PDV25_i_Neoporeziva_naknada_trosak.xml"));
+        String xml = new String(Primjeri.eRacun("eRacun_PDV25_i_Neoporeziva_naknada_trosak.xml"), StandardCharsets.UTF_8)
+                .replace("<cbc:ChargeIndicator>true</cbc:ChargeIndicator>", "<cbc:ChargeIndicator>1</cbc:ChargeIndicator>")
+                .replace("<cbc:ChargeIndicator>false</cbc:ChargeIndicator>", "<cbc:ChargeIndicator>0</cbc:ChargeIndicator>");
+
+        var r = UblParser.racun(xml.getBytes(StandardCharsets.UTF_8));
+
+        assertFalse(izvorni.troskovi().isEmpty() && izvorni.popusti().isEmpty());
+        assertEquals(izvorni.troskovi(), r.troskovi());
+        assertEquals(izvorni.popusti(), r.popusti());
+    }
+
+    @Test
+    void razlogOslobodenjaIzStandardneRasclambeKadGaHrProsirenjeNema() {
+        String xml = new String(Primjeri.eRacun("eRacun_Oslobodjeno_PDV.xml"), StandardCharsets.UTF_8)
+                .replaceFirst("(<cac:TaxCategory>\\s*<cbc:ID>E</cbc:ID>\\s*<cbc:Percent>0</cbc:Percent>)",
+                        "$1<cbc:TaxExemptionReasonCode>VATEX-EU-132</cbc:TaxExemptionReasonCode>");
+
+        var r = UblParser.racun(xml.getBytes(StandardCharsets.UTF_8));
+
+        assertEquals("HR:E", r.raspodjelaPdv().get(0).hrOznakaKategorijaPdv());
+        assertEquals("VATEX-EU-132", r.raspodjelaPdv().get(0).razlogOslobodenja());
+    }
+
+    @Test
     void strogoCitanjeJavljaSveGreskeOdjednom() {
         String xml = new String(Primjeri.eRacun("eRacun_PDV25.xml"), StandardCharsets.UTF_8)
                 .replace("<cbc:ProfileID>P1</cbc:ProfileID>", "")

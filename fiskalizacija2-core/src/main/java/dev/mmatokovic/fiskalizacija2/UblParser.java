@@ -173,7 +173,14 @@ public final class UblParser {
     }
 
     private static DokumentUkupanIznos ukupanIznos(Citac c, Element root) {
-        var pdv = c.broj(root, "cac:TaxTotal/cbc:TaxAmount", "BT-110 ukupni PDV", false);
+        BigDecimal pdv = null;
+        for (String putanja : new String[]{"cac:TaxTotal[cbc:TaxAmount/@currencyID = ../cbc:DocumentCurrencyCode]/cbc:TaxAmount",
+                "cac:TaxTotal[cac:TaxSubtotal]/cbc:TaxAmount", "cac:TaxTotal/cbc:TaxAmount"}) {
+            pdv = c.broj(root, putanja, "BT-110 ukupni PDV", false);
+            if (pdv != null) {
+                break;
+            }
+        }
         return new DokumentUkupanIznos(
                 c.broj(root, "cac:LegalMonetaryTotal/cbc:LineExtensionAmount", "BT-106 zbroj neto iznosa stavki", true),
                 c.broj(root, "cac:LegalMonetaryTotal/cbc:AllowanceTotalAmount", "BT-107", false),
@@ -188,14 +195,7 @@ public final class UblParser {
     private static List<RaspodjelaPdv> raspodjelaPdv(Citac c, Element root) {
         var hrRaspodjela = c.cvorovi(root, HR_TAX_SUBTOTAL);
         var raspodjela = !hrRaspodjela.isEmpty()
-                ? hrRaspodjela.stream().map(n -> new RaspodjelaPdv(
-                        c.obvezanTekst(n, "hrextac:HRTaxCategory/cbc:ID", "HR-BT-18 kategorija PDV-a"),
-                        c.broj(n, "cbc:TaxableAmount", "HR-BT-16 oporezivi iznos", true),
-                        c.broj(n, "cbc:TaxAmount", "HR-BT-17 iznos poreza", true),
-                        c.broj(n, "hrextac:HRTaxCategory/cbc:Percent", "HR-BT-19 stopa", false),
-                        c.tekst(n, "hrextac:HRTaxCategory/cbc:TaxExemptionReasonCode"),
-                        c.tekst(n, "hrextac:HRTaxCategory/cbc:TaxExemptionReason"),
-                        c.tekst(n, "hrextac:HRTaxCategory/cbc:Name"))).toList()
+                ? hrRaspodjela.stream().map(n -> hrRaspodjela(c, root, n)).toList()
                 : c.cvorovi(root, "cac:TaxTotal/cac:TaxSubtotal").stream().map(n -> new RaspodjelaPdv(
                         c.obvezanTekst(n, "cac:TaxCategory/cbc:ID", "BT-118 kategorija PDV-a"),
                         c.broj(n, "cbc:TaxableAmount", "BT-116 oporezivi iznos", true),
@@ -210,8 +210,36 @@ public final class UblParser {
         return raspodjela;
     }
 
+    private static RaspodjelaPdv hrRaspodjela(Citac c, Element root, Node n) {
+        String kategorija = c.obvezanTekst(n, "hrextac:HRTaxCategory/cbc:ID", "HR-BT-18 kategorija PDV-a");
+        var stopa = c.broj(n, "hrextac:HRTaxCategory/cbc:Percent", "HR-BT-19 stopa", false);
+        String razlog = c.tekst(n, "hrextac:HRTaxCategory/cbc:TaxExemptionReasonCode");
+        String tekstRazloga = c.tekst(n, "hrextac:HRTaxCategory/cbc:TaxExemptionReason");
+        if ((razlog == null || tekstRazloga == null) && kategorija != null) {
+            var standardna = standardnaKategorija(c, root, kategorija, stopa);
+            if (standardna != null) {
+                razlog = razlog != null ? razlog : c.tekst(standardna, "cbc:TaxExemptionReasonCode");
+                tekstRazloga = tekstRazloga != null ? tekstRazloga : c.tekst(standardna, "cbc:TaxExemptionReason");
+            }
+        }
+        return new RaspodjelaPdv(kategorija, c.broj(n, "cbc:TaxableAmount", "HR-BT-16 oporezivi iznos", true),
+                c.broj(n, "cbc:TaxAmount", "HR-BT-17 iznos poreza", true), stopa, razlog, tekstRazloga,
+                c.tekst(n, "hrextac:HRTaxCategory/cbc:Name"));
+    }
+
+    private static Node standardnaKategorija(Citac c, Element root, String kategorija, BigDecimal stopa) {
+        for (var kat : c.cvorovi(root, "cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory")) {
+            var s = c.broj(kat, "cbc:Percent", "BT-119 stopa", false);
+            if (kategorija.equals(c.tekst(kat, "cbc:ID"))
+                    && (stopa == null ? s == null : s != null && stopa.compareTo(s) == 0)) {
+                return kat;
+            }
+        }
+        return null;
+    }
+
     private static List<DokumentPopust> popusti(Citac c, Element root) {
-        return c.cvorovi(root, "cac:AllowanceCharge[normalize-space(cbc:ChargeIndicator)='false']").stream()
+        return c.cvorovi(root, "cac:AllowanceCharge[normalize-space(cbc:ChargeIndicator)='false' or normalize-space(cbc:ChargeIndicator)='0']").stream()
                 .map(n -> new DokumentPopust(
                         c.broj(n, "cbc:Amount", "BT-92 iznos popusta", true),
                         c.obvezanTekst(n, "cac:TaxCategory/cbc:ID", "BT-95 kategorija PDV-a popusta"),
@@ -222,7 +250,7 @@ public final class UblParser {
     }
 
     private static List<DokumentTrosak> troskovi(Citac c, Element root) {
-        return c.cvorovi(root, "cac:AllowanceCharge[normalize-space(cbc:ChargeIndicator)='true']").stream()
+        return c.cvorovi(root, "cac:AllowanceCharge[normalize-space(cbc:ChargeIndicator)='true' or normalize-space(cbc:ChargeIndicator)='1']").stream()
                 .map(n -> new DokumentTrosak(
                         c.broj(n, "cbc:Amount", "BT-99 iznos troška", true),
                         c.obvezanTekst(n, "cac:TaxCategory/cbc:ID", "BT-102 kategorija PDV-a troška"),
@@ -258,7 +286,7 @@ public final class UblParser {
     }
 
     private static List<KlasifikacijaArtikla> klasifikacije(Citac c, Node stavka) {
-        return c.cvorovi(stavka, "cac:Item/cac:CommodityClassification/cbc:ItemClassificationCode").stream()
+        return c.cvorovi(stavka, "cac:Item/cac:CommodityClassification/cbc:ItemClassificationCode[@listID='CG']").stream()
                 .map(k -> new KlasifikacijaArtikla(
                         c.tekst(k, "."),
                         c.obvezanTekst(k, "@listID", "BT-158-1 shema klasifikacije"),
