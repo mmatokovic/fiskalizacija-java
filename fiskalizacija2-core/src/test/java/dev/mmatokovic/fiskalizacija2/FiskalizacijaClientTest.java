@@ -244,9 +244,11 @@ class FiskalizacijaClientTest {
     void potpisSpremljenogOdgovoraSeMozeProvjeritiKasnije() {
         status = 200;
         odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
-        var arhiva = client().evidentirajNaplatu(naplata()).soapOdgovor();
+        var r = client().evidentirajNaplatu(naplata());
+        var arhiva = r.soapOdgovor();
 
-        assertEquals(PotpisOdgovora.ISPRAVAN, client().provjeriOdgovor(arhiva, Instant.now()));
+        assertEquals(Primjeri.SAT.instant(), r.primljeno());
+        assertEquals(PotpisOdgovora.ISPRAVAN, client().provjeriOdgovor(arhiva, r.primljeno()));
         assertEquals(PotpisOdgovora.NEISPRAVAN, client().provjeriOdgovor(
                 arhiva.replace(">true</eizv:prihvacenZahtjev>", ">false</eizv:prihvacenZahtjev>"), Instant.now()));
         assertEquals(PotpisOdgovora.NEISPRAVAN, client().provjeriOdgovor(arhiva.replace("<soapenv:Body>", "<soapenv:Body>"

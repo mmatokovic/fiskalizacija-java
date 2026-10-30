@@ -17,7 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   certificate and OIB are provided.
 - JaCoCo test coverage report.
 - `FiskalizacijaClient.provjeriOdgovor` checks the signature of an archived response, with the certificate chain
-  validated as of the time the response was received.
+  validated as of the time the response was received (`Rezultat.primljeno()`).
 
 ### Security
 - The response signature must be a child of the response element and must cover that element, and the response must

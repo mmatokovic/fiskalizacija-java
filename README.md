@@ -47,7 +47,7 @@ Racun racun = UblParser.racun(Files.readAllBytes(Path.of("eracun.xml")));
 Rezultat r = client.evidentirajERacun(VrstaERacuna.IZLAZNI, racun);
 
 if (r.prihvacen()) {
-    archive.save(r.idZahtjeva(), r.soapZahtjev(), r.soapOdgovor());
+    archive.save(r.idZahtjeva(), r.soapZahtjev(), r.soapOdgovor(), r.primljeno());
 } else {
     log.warn("Porezna rejected the request: {} {}", r.greska().sifra(), r.greska().opis());
 }
@@ -81,11 +81,11 @@ message in one transaction, send, store the response, and retry failed sends wit
 ## Checking an archived response
 
 The response signature can be checked again later, for example during a tax audit, from the archived
-`soapOdgovor`. Pass the time the response was received: the certificate chain is checked as of that moment,
-because the Porezna certificate may have expired since.
+`soapOdgovor` and `primljeno` of a `Rezultat`. The certificate chain is checked as of the time the response was
+received, because the Porezna certificate may have expired since.
 
 ```java
-PotpisOdgovora potpis = client.provjeriOdgovor(archived.soapOdgovor(), archived.receivedAt());
+PotpisOdgovora potpis = client.provjeriOdgovor(r.soapOdgovor(), r.primljeno());
 ```
 
 ## Received eRačun

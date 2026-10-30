@@ -183,6 +183,7 @@ public final class FiskalizacijaClient {
             throw new FiskalizacijaException("Slanje prekinuto", 0, null, e);
         }
 
+        Instant primljeno = sat.instant();
         int status = odgovor.statusCode();
         String tijelo = odgovor.body();
         Document dokument;
@@ -205,7 +206,8 @@ public final class FiskalizacijaClient {
             throw new FiskalizacijaException("Odgovor je za zahtjev " + o.idZahtjeva() + ", a poslan je " + zahtjev.id()
                     + " (HTTP " + status + ")", status, tijelo, null);
         }
-        return new Rezultat(zahtjev.id(), o, ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici), status, soap, tijelo);
+        return new Rezultat(zahtjev.id(), o, ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici), status, soap, tijelo,
+                primljeno);
     }
 
     /**
@@ -213,8 +215,8 @@ public final class FiskalizacijaClient {
      * ovog klijenta. Potpis mora pokrivati jedini element u SOAP tijelu.
      *
      * @param soapOdgovor odgovor točno onako kako je primljen ({@link Rezultat#soapOdgovor()})
-     * @param primljen    kad je odgovor primljen; lanac certifikata provjerava se na taj trenutak, jer certifikat
-     *                    Porezne do provjere iz arhive može isteći
+     * @param primljen    kad je odgovor primljen ({@link Rezultat#primljeno()}); lanac certifikata provjerava se na
+     *                    taj trenutak, jer certifikat Porezne do provjere iz arhive može isteći
      * @throws IllegalArgumentException ako odgovor nije XML
      */
     public PotpisOdgovora provjeriOdgovor(String soapOdgovor, Instant primljen) {

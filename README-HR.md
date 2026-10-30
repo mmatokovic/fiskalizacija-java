@@ -42,7 +42,7 @@ Racun racun = UblParser.racun(Files.readAllBytes(Path.of("eracun.xml")));
 Rezultat r = client.evidentirajERacun(VrstaERacuna.IZLAZNI, racun);
 
 if (r.prihvacen()) {
-    arhiva.spremi(r.idZahtjeva(), r.soapZahtjev(), r.soapOdgovor());
+    arhiva.spremi(r.idZahtjeva(), r.soapZahtjev(), r.soapOdgovor(), r.primljeno());
 } else {
     log.warn("Porezna je odbila zahtjev: {} {}", r.greska().sifra(), r.greska().opis());
 }
@@ -75,12 +75,12 @@ transakciji, pošaljite, spremite odgovor, a neuspjela slanja ponavljajte u zako
 
 ## Provjera spremljenog odgovora
 
-Potpis odgovora može se ponovno provjeriti i kasnije, npr. kod poreznog nadzora, iz spremljenog `soapOdgovor`.
-Proslijedite trenutak primitka odgovora: lanac certifikata provjerava se na taj trenutak, jer je certifikat
-Porezne u međuvremenu možda istekao.
+Potpis odgovora može se ponovno provjeriti i kasnije, npr. kod poreznog nadzora, iz spremljenih `soapOdgovor` i
+`primljeno` iz `Rezultat`. Lanac certifikata provjerava se na trenutak primitka odgovora, jer je certifikat Porezne
+u međuvremenu možda istekao.
 
 ```java
-PotpisOdgovora potpis = client.provjeriOdgovor(arhiva.soapOdgovor(), arhiva.primljeno());
+PotpisOdgovora potpis = client.provjeriOdgovor(r.soapOdgovor(), r.primljeno());
 ```
 
 ## Ulazni eRačuni
