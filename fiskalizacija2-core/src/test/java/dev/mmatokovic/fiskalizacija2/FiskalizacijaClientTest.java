@@ -220,13 +220,29 @@ class FiskalizacijaClientTest {
         assertThrows(IllegalArgumentException.class, () -> b.timeout(Duration.ZERO));
     }
 
+    @Test
+    void bezXsdValidacijeSeNeispravanZahtjevIpakSalje() {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>false</eizv:prihvacenZahtjev>");
+        var neispravna = new Naplata("1", LocalDate.of(2026, 3, 1), "123", "11111111119", LocalDate.of(2026, 3, 2),
+                BigDecimal.ONE, NacinPlacanja.T);
+
+        var r = builder().xsdValidacija(false).build().evidentirajNaplatu(neispravna);
+
+        assertEquals(1, primljeno.size());
+        assertFalse(r.prihvacen());
+    }
+
     private FiskalizacijaClient client() {
+        return builder().build();
+    }
+
+    private FiskalizacijaClient.Builder builder() {
         return FiskalizacijaClient.builder(Okruzenje.TEST, potpisivac)
                 .adresa(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/FiskalizacijaService"))
                 .povjerljiviCertifikati(Primjeri.sidra(potpisivac), List.of())
                 .timeout(Duration.ofSeconds(5))
-                .sat(Primjeri.SAT)
-                .build();
+                .sat(Primjeri.SAT);
     }
 
     private static Naplata naplata() {
