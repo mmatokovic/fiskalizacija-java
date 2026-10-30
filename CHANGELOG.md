@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - JaCoCo test coverage report.
 - `FiskalizacijaClient.provjeriOdgovor` checks the signature of an archived response, with the certificate chain
   validated as of the time the response was received (`Rezultat.primljeno()`).
+- `pripremi*` methods return a signed, validated `PripremljeniZahtjev` without sending it; `posalji` sends it and
+  `obradiOdgovor` processes a response received through your own HTTP client.
 
 ### Security
 - The response signature must be a child of the response element and must cover that element, and the response must

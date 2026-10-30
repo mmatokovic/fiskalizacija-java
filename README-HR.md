@@ -73,6 +73,19 @@ analizu odbijenih poruka. Provjera potpisa odgovora vraća se kao `PotpisOdgovor
 Library ne drži stanje ni bazu. Za pouzdano slanje koristite outbox obrazac: spremite račun i poruku u istoj
 transakciji, pošaljite, spremite odgovor, a neuspjela slanja ponavljajte u zakonskim rokovima.
 
+## Slanje vlastitim HTTP klijentom
+
+Metode `pripremi*` potpisuju i validiraju zahtjev bez slanja, npr. za slanje vlastitim HTTP klijentom, proxyjem
+ili kroz red poruka. Odgovor se vraća metodi `obradiOdgovor`, koja radi iste provjere kao običan poziv.
+
+```java
+PripremljeniZahtjev zahtjev = client.pripremiNaplatu(List.of(naplata));
+HttpResponse<String> http = mojHttpKlijent.post(zahtjev.soap());
+Rezultat r = client.obradiOdgovor(zahtjev, http.statusCode(), http.body());
+```
+
+`zahtjev.soap()` šaljite bez izmjena, inače potpis više ne vrijedi.
+
 ## Provjera spremljenog odgovora
 
 Potpis odgovora može se ponovno provjeriti i kasnije, npr. kod poreznog nadzora, iz spremljenih `soapOdgovor` i

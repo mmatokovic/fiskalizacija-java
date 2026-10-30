@@ -78,6 +78,19 @@ analysing rejected messages. The response signature check is returned as `Potpis
 The library keeps no state and no database. For reliable delivery use the outbox pattern: store the invoice and the
 message in one transaction, send, store the response, and retry failed sends within the legal deadlines.
 
+## Sending with your own HTTP client
+
+`pripremi*` methods sign and validate a request without sending it, for example to send it through your own
+HTTP client, proxy or queue. Hand the response back to `obradiOdgovor`, which runs the same checks as a normal call.
+
+```java
+PripremljeniZahtjev zahtjev = client.pripremiNaplatu(List.of(naplata));
+HttpResponse<String> http = myHttpClient.post(zahtjev.soap());
+Rezultat r = client.obradiOdgovor(zahtjev, http.statusCode(), http.body());
+```
+
+Send `zahtjev.soap()` unchanged, otherwise the signature is no longer valid.
+
 ## Checking an archived response
 
 The response signature can be checked again later, for example during a tax audit, from the archived

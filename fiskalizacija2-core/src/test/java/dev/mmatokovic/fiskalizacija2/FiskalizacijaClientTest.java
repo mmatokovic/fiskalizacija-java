@@ -16,6 +16,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -280,6 +283,46 @@ class FiskalizacijaClientTest {
         assertEquals(PotpisOdgovora.NEDOSTAJE, client().provjeriOdgovor(
                 odgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>"), Instant.now()));
         assertThrows(IllegalArgumentException.class, () -> client().provjeriOdgovor("<html>", Instant.now()));
+    }
+
+    @Test
+    void pripremljeniZahtjevSeSaljeVlastitimHttpKlijentom() throws Exception {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
+        var c = client();
+        var zahtjev = c.pripremiNaplatu(List.of(naplata()));
+
+        var http = HttpClient.newHttpClient().send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/FiskalizacijaService"))
+                .POST(HttpRequest.BodyPublishers.ofString(zahtjev.soap())).build(), HttpResponse.BodyHandlers.ofString());
+        var r = c.obradiOdgovor(zahtjev, http.statusCode(), http.body());
+
+        assertTrue(r.prihvacen());
+        assertEquals(zahtjev.idZahtjeva(), r.idZahtjeva());
+        assertEquals(zahtjev.soap(), r.soapZahtjev());
+        assertEquals(zahtjev.soap(), primljeno.get(0));
+        assertEquals(PotpisOdgovora.ISPRAVAN, r.potpisOdgovora());
+    }
+
+    @Test
+    void pripremljeniZahtjevJePotpisanIProlaziShemu() throws Exception {
+        var zahtjev = client().pripremiNaplatu(List.of(naplata()));
+
+        var el = (org.w3c.dom.Element) Xml.parsiraj(zahtjev.soap())
+                .getElementsByTagNameNS(Zahtjevi.NS_EIZV, "EvidentirajNaplatuZahtjev").item(0);
+        assertEquals(zahtjev.idZahtjeva(), el.getAttributeNS(Zahtjevi.NS_EIZV, "id"));
+        assertEquals(List.of(), Xsd.greske(el));
+        assertEquals(PotpisOdgovora.ISPRAVAN, ProvjeraPotpisa.provjeri(el, Primjeri.sidra(potpisivac), List.of()));
+        assertEquals(0, primljeno.size());
+    }
+
+    @Test
+    void pripremljeniZahtjevSeSaljeKlijentom() {
+        status = 200;
+        odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
+        var c = client();
+
+        assertTrue(c.posalji(c.pripremiNaplatu(List.of(naplata()))).prihvacen());
     }
 
     private FiskalizacijaClient client() {

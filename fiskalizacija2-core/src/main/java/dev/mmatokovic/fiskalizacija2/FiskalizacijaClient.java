@@ -88,7 +88,7 @@ public final class FiskalizacijaClient {
      * @see #evidentirajERacun(VrstaERacuna, Racun)
      */
     public Rezultat evidentirajERacun(VrstaERacuna vrsta, List<Racun> racuni) {
-        return posalji(Zahtjevi.evidentirajERacun(vrsta, racuni, sat), "EvidentirajERacunOdgovor");
+        return posalji(pripremiERacun(vrsta, racuni));
     }
 
     /**
@@ -110,7 +110,7 @@ public final class FiskalizacijaClient {
      * @see #evidentirajERacun(VrstaERacuna, Racun)
      */
     public Rezultat evidentirajIsporukuZaKojuNijeIzdanERacun(List<Racun> racuni) {
-        return posalji(Zahtjevi.evidentirajIsporukuZaKojuNijeIzdanERacun(racuni, sat), "EvidentirajIsporukuZaKojuNijeIzdanERacunOdgovor");
+        return posalji(pripremiIsporukuZaKojuNijeIzdanERacun(racuni));
     }
 
     /**
@@ -132,7 +132,7 @@ public final class FiskalizacijaClient {
      * @see #evidentirajERacun(VrstaERacuna, Racun)
      */
     public Rezultat evidentirajNaplatu(List<Naplata> naplate) {
-        return posalji(Zahtjevi.evidentirajNaplatu(naplate, sat), "EvidentirajNaplatuOdgovor");
+        return posalji(pripremiNaplatu(naplate));
     }
 
     /**
@@ -154,10 +154,34 @@ public final class FiskalizacijaClient {
      * @see #evidentirajERacun(VrstaERacuna, Racun)
      */
     public Rezultat evidentirajOdbijanje(List<Odbijanje> odbijanja) {
-        return posalji(Zahtjevi.evidentirajOdbijanje(odbijanja, sat), "EvidentirajOdbijanjeOdgovor");
+        return posalji(pripremiOdbijanje(odbijanja));
     }
 
-    private Rezultat posalji(Zahtjevi.Zahtjev zahtjev, String odgovorElement) {
+    /**
+     * Potpisuje i validira {@code EvidentirajERacunZahtjev} bez slanja, npr. za slanje vlastitim HTTP klijentom.
+     *
+     * @throws NeispravanZahtjevException ako poruka ne prolazi XSD shemu
+     */
+    public PripremljeniZahtjev pripremiERacun(VrstaERacuna vrsta, List<Racun> racuni) {
+        return pripremi(Zahtjevi.evidentirajERacun(vrsta, racuni, sat), "EvidentirajERacunOdgovor");
+    }
+
+    /** @see #pripremiERacun(VrstaERacuna, List) */
+    public PripremljeniZahtjev pripremiIsporukuZaKojuNijeIzdanERacun(List<Racun> racuni) {
+        return pripremi(Zahtjevi.evidentirajIsporukuZaKojuNijeIzdanERacun(racuni, sat), "EvidentirajIsporukuZaKojuNijeIzdanERacunOdgovor");
+    }
+
+    /** @see #pripremiERacun(VrstaERacuna, List) */
+    public PripremljeniZahtjev pripremiNaplatu(List<Naplata> naplate) {
+        return pripremi(Zahtjevi.evidentirajNaplatu(naplate, sat), "EvidentirajNaplatuOdgovor");
+    }
+
+    /** @see #pripremiERacun(VrstaERacuna, List) */
+    public PripremljeniZahtjev pripremiOdbijanje(List<Odbijanje> odbijanja) {
+        return pripremi(Zahtjevi.evidentirajOdbijanje(odbijanja, sat), "EvidentirajOdbijanjeOdgovor");
+    }
+
+    private PripremljeniZahtjev pripremi(Zahtjevi.Zahtjev zahtjev, String odgovorElement) {
         potpisivac.potpisi(zahtjev.element(), zahtjev.id());
         if (xsdValidacija) {
             var greske = Xsd.greske(zahtjev.element());
@@ -165,15 +189,22 @@ public final class FiskalizacijaClient {
                 throw new NeispravanZahtjevException(greske);
             }
         }
-        String soap = Xml.serijaliziraj(zahtjev.dokument());
+        return new PripremljeniZahtjev(zahtjev.id(), Xml.serijaliziraj(zahtjev.dokument()), odgovorElement);
+    }
 
+    /**
+     * Šalje pripremljeni zahtjev.
+     *
+     * @throws FiskalizacijaException ako poziv ne uspije ili odgovor nije valjan fiskalizacijski odgovor
+     */
+    public Rezultat posalji(PripremljeniZahtjev zahtjev) {
         HttpResponse<String> odgovor;
         try {
             odgovor = http.send(HttpRequest.newBuilder(adresa)
                             .timeout(timeout)
                             .header("Content-Type", "application/xml; charset=utf-8")
                             .header("SOAPAction", "\"\"")
-                            .POST(HttpRequest.BodyPublishers.ofString(soap, StandardCharsets.UTF_8))
+                            .POST(HttpRequest.BodyPublishers.ofString(zahtjev.soap(), StandardCharsets.UTF_8))
                             .build(),
                     HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         } catch (IOException e) {
@@ -182,32 +213,41 @@ public final class FiskalizacijaClient {
             Thread.currentThread().interrupt();
             throw new FiskalizacijaException("Slanje prekinuto", 0, null, e);
         }
+        return obradiOdgovor(zahtjev, odgovor.statusCode(), odgovor.body());
+    }
 
+    /**
+     * Obrađuje odgovor na zahtjev poslan vlastitim HTTP klijentom, uz iste provjere kao {@link #posalji(PripremljeniZahtjev)}.
+     * Pozovite je odmah po primitku, jer se tada bilježi {@link Rezultat#primljeno()}.
+     *
+     * @throws FiskalizacijaException ako odgovor nije valjan fiskalizacijski odgovor na taj zahtjev
+     */
+    public Rezultat obradiOdgovor(PripremljeniZahtjev zahtjev, int httpStatus, String soapOdgovor) {
         Instant primljeno = sat.instant();
-        int status = odgovor.statusCode();
-        String tijelo = odgovor.body();
+        String odgovorElement = zahtjev.odgovorElement();
         Document dokument;
         try {
-            dokument = Xml.parsiraj(tijelo);
+            dokument = Xml.parsiraj(soapOdgovor);
         } catch (Exception e) {
-            throw new FiskalizacijaException("Odgovor nije XML (HTTP " + status + ")", status, tijelo, e);
+            throw new FiskalizacijaException("Odgovor nije XML (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, e);
         }
         var el = dokument.getElementsByTagNameNS("*", odgovorElement);
         if (el.getLength() != 1) {
             throw new FiskalizacijaException("Odgovor mora sadržavati točno jedan " + odgovorElement + ", a sadrži "
-                    + el.getLength() + " (HTTP " + status + ")", status, tijelo, null);
+                    + el.getLength() + " (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
         }
         var odgovorEl = (Element) el.item(0);
         var o = odgovor(odgovorEl);
         if (o == null) {
-            throw new FiskalizacijaException(odgovorElement + " ne sadrži element Odgovor (HTTP " + status + ")", status, tijelo, null);
+            throw new FiskalizacijaException(odgovorElement + " ne sadrži element Odgovor (HTTP " + httpStatus + ")",
+                    httpStatus, soapOdgovor, null);
         }
-        if (o.idZahtjeva() != null && !o.idZahtjeva().equals(zahtjev.id())) {
-            throw new FiskalizacijaException("Odgovor je za zahtjev " + o.idZahtjeva() + ", a poslan je " + zahtjev.id()
-                    + " (HTTP " + status + ")", status, tijelo, null);
+        if (o.idZahtjeva() != null && !o.idZahtjeva().equals(zahtjev.idZahtjeva())) {
+            throw new FiskalizacijaException("Odgovor je za zahtjev " + o.idZahtjeva() + ", a poslan je " + zahtjev.idZahtjeva()
+                    + " (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
         }
-        return new Rezultat(zahtjev.id(), o, ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici), status, soap, tijelo,
-                primljeno);
+        return new Rezultat(zahtjev.idZahtjeva(), o, ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici), httpStatus,
+                zahtjev.soap(), soapOdgovor, primljeno);
     }
 
     /**
