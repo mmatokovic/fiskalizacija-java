@@ -1,7 +1,7 @@
 # fiskalizacija2-java
 
 [![build](https://github.com/mmatokovic/fiskalizacija2-java/actions/workflows/build.yml/badge.svg)](https://github.com/mmatokovic/fiskalizacija2-java/actions/workflows/build.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 ![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)
 
 [README in English](README.md)
@@ -176,4 +176,4 @@ Za doprinos vidi [CONTRIBUTING.md](CONTRIBUTING.md), a za prijavu ranjivosti [SE
 
 ## Licencija
 
-MIT, vidi [LICENSE](LICENSE).
+Apache License 2.0, vidi [LICENSE](LICENSE).
