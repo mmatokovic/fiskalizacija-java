@@ -119,7 +119,7 @@ public final class ProvjeraPotpisa {
             return zadani.dereference(uri, c);
         });
 
-        String id = registrirajId(ctx, potpisani);
+        var idovi = registrirajIdove(ctx, potpisani);
         var idUnutarPotpisa = new HashSet<String>();
         registrirajIdove(ctx, signatureEl, idUnutarPotpisa);
         var pojaveId = new HashMap<String, Integer>();
@@ -127,7 +127,7 @@ public final class ProvjeraPotpisa {
 
         try {
             XMLSignature potpis = fac.unmarshalXMLSignature(ctx);
-            if (!dopusten(potpis.getSignedInfo(), id, idUnutarPotpisa, pojaveId) || !potpis.validate(ctx)) {
+            if (!dopusten(potpis.getSignedInfo(), idovi, idUnutarPotpisa, pojaveId) || !potpis.validate(ctx)) {
                 return PotpisOdgovora.NEISPRAVAN;
             }
         } catch (Exception e) {
@@ -170,7 +170,7 @@ public final class ProvjeraPotpisa {
         return nadjen;
     }
 
-    private static boolean dopusten(SignedInfo si, String id, Set<String> idUnutarPotpisa, Map<String, Integer> pojaveId) {
+    private static boolean dopusten(SignedInfo si, Set<String> idovi, Set<String> idUnutarPotpisa, Map<String, Integer> pojaveId) {
         if (!KANONIKALIZACIJE.contains(si.getCanonicalizationMethod().getAlgorithm())
                 || !POTPISI.contains(si.getSignatureMethod().getAlgorithm())
                 || si.getReferences().size() > MAKS_REFERENCI) {
@@ -202,7 +202,7 @@ public final class ProvjeraPotpisa {
             if (pojaveId.getOrDefault(cilj, 0) != 1) {
                 return false;
             }
-            if (cilj.equals(id)) {
+            if (idovi.contains(cilj)) {
                 pokrivaElement = true;
             } else if (!(XADES_SIGNED_PROPERTIES.equals(ref.getType()) && idUnutarPotpisa.contains(cilj))) {
                 return false;
@@ -227,24 +227,23 @@ public final class ProvjeraPotpisa {
         }
     }
 
-    private static String registrirajId(DOMValidateContext ctx, Element el) {
+    /** Sve vrijednosti atributa {@code id}/{@code Id} elementa; odgovori Porezne mogu imati oba (npr. {@code efis:id} i {@code Id}). */
+    private static Set<String> registrirajIdove(DOMValidateContext ctx, Element el) {
+        var idovi = new HashSet<String>();
         var atributi = el.getAttributes();
         for (int i = 0; i < atributi.getLength(); i++) {
             var a = (Attr) atributi.item(i);
             String ime = a.getLocalName() != null ? a.getLocalName() : a.getName();
             if ("id".equals(ime) || "Id".equals(ime)) {
                 ctx.setIdAttributeNS(el, a.getNamespaceURI(), ime);
-                return a.getValue();
+                idovi.add(a.getValue());
             }
         }
-        return null;
+        return idovi;
     }
 
     private static void registrirajIdove(DOMValidateContext ctx, Element el, Set<String> idovi) {
-        String id = registrirajId(ctx, el);
-        if (id != null) {
-            idovi.add(id);
-        }
+        idovi.addAll(registrirajIdove(ctx, el));
         for (var n = el.getFirstChild(); n != null; n = n.getNextSibling()) {
             if (n instanceof Element dijete) {
                 registrirajIdove(ctx, dijete, idovi);

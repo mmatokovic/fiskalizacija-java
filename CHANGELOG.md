@@ -36,6 +36,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   where FINA puts it, and no longer anywhere in the subject text.
 - XAdES signing is no longer public API (`Potpisivac.potpisi` removed); its signing time follows the client's `sat`.
 - `Zki.izracunaj` throws `NeispravanZahtjevException` for an amount with more than two decimals, as the clients do.
+- Fiskalizacija 2.0 follows its technical specification: test address `cistest.apis-it.hr:8509/FiskalizacijaServiceEprod`,
+  `Content-Type: text/xml`, XAdES with `IssuerSerialV2` and `DataObjectFormat` as in its examples, and no item
+  classification on credit notes (381) and prepayment invoices (386). `Okruzenje` gives both addresses
+  (`adresaB2b()`, `adresaB2c()`) and the response signer.
 - `datumVrijemeSlanja` is always written in Europe/Zagreb time. A SOAP Fault's `faultstring` is part of the
   `FiskalizacijaException` message. `Rezultat.toString()` leaves out the raw SOAP messages.
 - Only KPD (`CG`) item classifications are read from UBL, VAT total BT-110 is taken from the tax total in the document
@@ -45,11 +49,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - The response signature must be a child of the response element and must cover that element, and the response must
   contain exactly one response element. This prevents XML signature wrapping, where an unsigned forged response
   is read next to a validly signed one.
-- Signature verification only accepts same-document references, a fixed set of algorithms and transforms, and RSA
-  keys of at least 2048 bits.
-- A response without `idZahtjeva`, or with a different one, is rejected with `FiskalizacijaException`.
-- By default only a certificate whose subject contains the Ministry of Finance OIB may sign responses; a valid FINA
-  chain alone is not enough, since every taxpayer has a FINA certificate.
+- Signature verification only accepts same-document references, a fixed set of algorithms and transforms, RSA
+  keys of at least 2048 bits and EC keys of at least 256 bits.
+- A response without `idZahtjeva` is rejected with `FiskalizacijaException`. Porezna generates `idZahtjeva`, so it is
+  not compared with the request's `id`.
+- By default only APIS IT's application certificate `fiskalcis` (test: `fiskalcistest`) may sign responses, as the
+  specifications say; a valid FINA chain alone is not enough, since every taxpayer has a FINA certificate.
 - Responses larger than 10 MB are rejected, and at most four transforms per reference are accepted.
 - `Rezultat.prihvacen()` is `true` only when the response signature is `ISPRAVAN`; `prihvacenBezProvjerePotpisa()`
   tells what the response says regardless of the signature.

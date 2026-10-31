@@ -99,14 +99,16 @@ public final class UblParser {
         var raspodjela = raspodjelaPdv(c, root);
         var popusti = popusti(c, root);
         var troskovi = troskovi(c, root);
-        var stavke = stavke(c, root, invoice);
+        String vrstaDokumenta = c.obvezanTekst(root, invoice ? "cbc:InvoiceTypeCode" : "cbc:CreditNoteTypeCode", "BT-3 vrsta dokumenta");
+        var stavke = stavke(c, root, invoice, vrstaDokumenta);
 
         String kopija = c.tekst(root, "cbc:CopyIndicator");
         return new Racun(
                 c.obvezanTekst(root, "cbc:ID", "BT-1 broj računa"),
                 c.datum(root, "cbc:IssueDate", "BT-2 datum izdavanja", true),
-                c.obvezanTekst(root, invoice ? "cbc:InvoiceTypeCode" : "cbc:CreditNoteTypeCode", "BT-3 vrsta dokumenta"),
+                vrstaDokumenta,
                 c.obvezanTekst(root, "cbc:DocumentCurrencyCode", "BT-5 valuta"),
+                // CreditNote nema cbc:DueDate; specifikacija navodi samo Invoice, pa se uzima rok plaćanja iz PaymentMeans
                 c.datum(root, invoice ? "cbc:DueDate" : "cac:PaymentMeans/cbc:PaymentDueDate", "BT-9 datum dospijeća", false),
                 c.obvezanTekst(root, "cbc:ProfileID", "BT-23 vrsta poslovnog procesa"),
                 c.tekst(root, "cac:ContractDocumentReference/cbc:ID"),
@@ -252,7 +254,7 @@ public final class UblParser {
                 .toList();
     }
 
-    private static List<Stavka> stavke(Citac c, Element root, boolean invoice) {
+    private static List<Stavka> stavke(Citac c, Element root, boolean invoice, String vrstaDokumenta) {
         String kolicina = invoice ? "cbc:InvoicedQuantity" : "cbc:CreditedQuantity";
         var stavke = c.cvorovi(root, invoice ? "cac:InvoiceLine" : "cac:CreditNoteLine").stream()
                 .map(n -> new Stavka(
@@ -268,7 +270,7 @@ public final class UblParser {
                         c.obvezanTekst(n, "cac:Item/cbc:Name", "BT-153 naziv artikla"),
                         c.tekst(n, "cac:Item/cbc:Description"),
                         c.tekst(n, "cac:Item/cac:ClassifiedTaxCategory/cbc:Name"),
-                        klasifikacije(c, n)))
+                        klasifikacije(c, n, vrstaDokumenta)))
                 .toList();
         if (stavke.isEmpty()) {
             c.greske.add("Račun nema nijednu stavku (BG-25)");
@@ -276,7 +278,11 @@ public final class UblParser {
         return stavke;
     }
 
-    private static List<KlasifikacijaArtikla> klasifikacije(Citac c, Node stavka) {
+    /** Za odobrenje (381) i predujam (386) klasifikacija artikla se ne unosi (specifikacija 2.0, pogl. 3.1.3.17.13). */
+    private static List<KlasifikacijaArtikla> klasifikacije(Citac c, Node stavka, String vrstaDokumenta) {
+        if ("381".equals(vrstaDokumenta) || "386".equals(vrstaDokumenta)) {
+            return List.of();
+        }
         return c.cvorovi(stavka, "cac:Item/cac:CommodityClassification/cbc:ItemClassificationCode[@listID='CG']").stream()
                 .map(k -> new KlasifikacijaArtikla(
                         c.tekst(k, "."),
@@ -379,6 +385,10 @@ public final class UblParser {
             }
         }
 
+        /**
+         * OIB iz {@code PartyTaxScheme/CompanyID} (HR + OIB), kako ga mapira specifikacija; ako ga tamo nema, iz
+         * {@code EndpointID} sheme 9934, gdje ga HR CIUS također zahtijeva.
+         */
         String oib(Node grupa, String btCompanyId, String btEndpointId) {
             String companyId = tekst(grupa, "cac:Party/cac:PartyTaxScheme/cbc:CompanyID");
             String izCompanyId = companyId != null && companyId.startsWith("HR") ? companyId.substring(2) : null;

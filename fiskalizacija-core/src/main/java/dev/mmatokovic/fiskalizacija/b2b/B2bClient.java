@@ -46,9 +46,6 @@ import java.util.function.Predicate;
  */
 public final class B2bClient {
 
-    /** OIB Ministarstva financija, kojem pripada Porezna uprava; nalazi se u certifikatima njezinih servisa. */
-    public static final String OIB_MINISTARSTVA_FINANCIJA = "18683136487";
-
     private final Postavke postavke;
     private final Potpisivac potpisivac;
     private final HttpClient http;
@@ -196,7 +193,7 @@ public final class B2bClient {
      * @throws FiskalizacijaException ako poziv ne uspije ili odgovor nije valjan fiskalizacijski odgovor
      */
     public Rezultat posalji(PripremljeniZahtjev zahtjev) {
-        var odgovor = SoapPoziv.posalji(http, postavke.adresa(), postavke.timeout(), "application/xml; charset=utf-8", "", zahtjev.soap());
+        var odgovor = SoapPoziv.posalji(http, postavke.adresa(), postavke.timeout(), "text/xml; charset=utf-8", "", zahtjev.soap());
         return obradiOdgovor(zahtjev, odgovor.status(), odgovor.tijelo());
     }
 
@@ -241,10 +238,6 @@ public final class B2bClient {
         }
         if (o.idZahtjeva() == null) {
             throw new FiskalizacijaException("Odgovor nema idZahtjeva (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
-        }
-        if (!o.idZahtjeva().equals(zahtjev.idZahtjeva())) {
-            throw new FiskalizacijaException("Odgovor je za zahtjev " + o.idZahtjeva() + ", a poslan je " + zahtjev.idZahtjeva()
-                    + " (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
         }
         return new Rezultat(zahtjev.idZahtjeva(), o,
                 postavke.provjeriPotpis(odgovorEl, null), httpStatus,
@@ -310,7 +303,8 @@ public final class B2bClient {
 
         private Builder(Okruzenje okruzenje, Potpisivac potpisivac) {
             this.potpisivac = potpisivac;
-            this.postavke = Postavke.zadane(okruzenje, okruzenje.adresa(), Subjekt.sadrziOib(OIB_MINISTARSTVA_FINANCIJA));
+            this.postavke = Postavke.zadane(okruzenje, okruzenje.adresaB2b(),
+                    Subjekt.potpisnik(okruzenje.potpisnikOdgovora(), Okruzenje.OIB_APIS_IT));
         }
 
         /** Za gateway ili reverse proxy ispred servisa Porezne uprave; za forward proxy vidi {@link #proxy(ProxySelector)}. */
@@ -359,9 +353,9 @@ public final class B2bClient {
         }
 
         /**
-         * Koji certifikat smije potpisati odgovor, uz ispravan lanac do povjerljivih CA. Zadano: subjekt sadrži
-         * {@value B2bClient#OIB_MINISTARSTVA_FINANCIJA}, jer svaki porezni obveznik ima vlastiti FINA certifikat
-         * kojim bi inače mogao potpisati lažni odgovor.
+         * Koji certifikat smije potpisati odgovor, uz ispravan lanac do povjerljivih CA. Zadano: {@code CN=fiskalcis}
+         * (u testu {@code fiskalcistest}) s OIB-om {@value Okruzenje#OIB_APIS_IT}, prema poglavlju 9 specifikacije, jer svaki
+         * porezni obveznik ima vlastiti FINA certifikat kojim bi inače mogao potpisati lažni odgovor.
          */
         public Builder potpisnikOdgovora(Predicate<X509Certificate> provjera) {
             postavke = postavke.potpisnikOdgovora(provjera);

@@ -8,7 +8,8 @@ import java.util.Objects;
 /**
  * Ishod jednog poziva. Sirovi SOAP zahtjev i odgovor čuvaju se namjerno: trebaju za arhivu i za analizu odbijenih poruka.
  *
- * @param idZahtjeva      id poslanog zahtjeva, isti kao {@code odgovor.idZahtjeva()} kad servis odgovori
+ * @param idZahtjeva      vrijednost atributa {@code id} poslanog zahtjeva; {@code odgovor.idZahtjeva()} je drugi identifikator,
+ *                        koji generira Sustav za fiskalizaciju (specifikacija 2.0, pogl. 5.7.1.1)
  * @param odgovor         odgovor Porezne uprave
  * @param potpisOdgovora  rezultat provjere potpisa odgovora
  * @param httpStatus      HTTP status odgovora

@@ -179,6 +179,16 @@ class PotpisTest {
     }
 
     @Test
+    void potpisMozeReferiratiBiloKojiIdOdgovora() throws Exception {
+        var doc = Xml.parsiraj("<eizv:EvidentirajNaplatuOdgovor xmlns:eizv=\"" + Zahtjevi.NS_EIZV + "\" eizv:id=\"I\" Id=\"J\">"
+                + "<eizv:Odgovor><eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev></eizv:Odgovor></eizv:EvidentirajNaplatuOdgovor>");
+        XmlDsig.potpisi(doc.getDocumentElement(), "J", potpisivac);
+        var procitan = Xml.parsiraj(Xml.serijaliziraj(doc)).getDocumentElement();
+
+        assertEquals(PotpisOdgovora.ISPRAVAN, ProvjeraPotpisa.provjeri(procitan, Primjeri.sidra(potpisivac), List.of()));
+    }
+
+    @Test
     void potpisImaXadesSvojstvaISazetakCertifikata() throws Exception {
         var doc = potpisanIPrenesen();
 
@@ -187,8 +197,17 @@ class PotpisTest {
         assertEquals("EvidentirajNaplatuZahtjev", zahtjev.getLocalName());
         assertEquals(potpis, zadnjiElement(zahtjev));
         var sazetak = doc.getElementsByTagNameNS("http://uri.etsi.org/01903/v1.3.2#", "CertDigest").item(0).getLastChild().getTextContent();
-        assertEquals(Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(potpisivac.certifikat().getEncoded())),
+        assertEquals(Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-512").digest(potpisivac.certifikat().getEncoded())),
                 sazetak);
+        String xades = "http://uri.etsi.org/01903/v1.3.2#";
+        byte[] issuerSerial = Base64.getDecoder().decode(doc.getElementsByTagNameNS(xades, "IssuerSerialV2").item(0).getTextContent());
+        var certifikat = potpisivac.certifikat();
+        assertTrue(sadrzi(issuerSerial, certifikat.getIssuerX500Principal().getEncoded()));
+        assertTrue(sadrzi(issuerSerial, certifikat.getSerialNumber().toByteArray()));
+        var format = (Element) doc.getElementsByTagNameNS(xades, "DataObjectFormat").item(0);
+        var podaci = (Element) doc.getElementsByTagNameNS("http://www.w3.org/2000/09/xmldsig#", "Reference").item(0);
+        assertEquals("#" + podaci.getAttribute("Id"), format.getAttribute("ObjectReference"));
+        assertEquals("text/xml", format.getTextContent().trim());
         String signedInfo = Xml.serijaliziraj(doc);
         assertTrue(signedInfo.contains("Type=\"http://uri.etsi.org/01903#SignedProperties\""));
         assertTrue(signedInfo.contains("http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"));
@@ -199,6 +218,19 @@ class PotpisTest {
                 LocalDate.of(2026, 3, 2), new BigDecimal("125.00"), NacinPlacanja.T)), Primjeri.SAT);
         Xades.potpisi(z.element(), z.id(), potpisivac, Clock.systemUTC());
         return Xml.parsiraj(Xml.serijaliziraj(z.dokument()));
+    }
+
+    private static boolean sadrzi(byte[] niz, byte[] dio) {
+        outer:
+        for (int i = 0; i + dio.length <= niz.length; i++) {
+            for (int j = 0; j < dio.length; j++) {
+                if (niz[i + j] != dio[j]) {
+                    continue outer;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     private static Element zahtjev(Document doc) {

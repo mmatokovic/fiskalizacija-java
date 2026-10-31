@@ -69,6 +69,17 @@ class UblParserTest {
     }
 
     @Test
+    void predujamNemaKlasifikacijeArtikla() {
+        var xml = new String(Primjeri.eRacun("eRacun_PDV25.xml"), StandardCharsets.UTF_8)
+                .replaceFirst("<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>", "<cbc:InvoiceTypeCode>386</cbc:InvoiceTypeCode>");
+
+        var r = UblParser.racun(xml.getBytes(StandardCharsets.UTF_8));
+
+        assertEquals("386", r.vrstaDokumenta());
+        assertTrue(r.stavke().stream().allMatch(st -> st.klasifikacije().isEmpty()));
+    }
+
+    @Test
     void odobrenjeSeCitaKaoCreditNote() {
         var r = UblParser.racun(Primjeri.eRacun("Odobrenje.xml"));
 

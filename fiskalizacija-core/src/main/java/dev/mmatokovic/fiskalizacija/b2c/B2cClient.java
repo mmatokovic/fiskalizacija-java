@@ -48,9 +48,6 @@ import java.util.function.Predicate;
  */
 public final class B2cClient {
 
-    /** OIB APIS IT-a, čiji certifikati {@code fiskalcis} i {@code fiskalcistest} potpisuju odgovore. */
-    public static final String OIB_APIS_IT = "02994650199";
-
     private static final String SOAP_ACTION = "http://e-porezna.porezna-uprava.hr/fiskalizacija/2012/services/FiskalizacijaService/";
     private static final String CONTENT_TYPE = "text/xml; charset=utf-8";
 
@@ -256,10 +253,8 @@ public final class B2cClient {
 
         private Builder(Okruzenje okruzenje, Potpisivac potpisivac) {
             this.potpisivac = potpisivac;
-            this.postavke = Postavke.zadane(okruzenje, okruzenje == Okruzenje.TEST
-                            ? URI.create("https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest")
-                            : URI.create("https://cis.porezna-uprava.hr:8449/FiskalizacijaService"),
-                    Subjekt.potpisnik(okruzenje == Okruzenje.TEST ? "fiskalcistest" : "fiskalcis", OIB_APIS_IT));
+            this.postavke = Postavke.zadane(okruzenje, okruzenje.adresaB2c(),
+                    Subjekt.potpisnik(okruzenje.potpisnikOdgovora(), Okruzenje.OIB_APIS_IT));
         }
 
         /** Za gateway ili reverse proxy ispred servisa; za forward proxy vidi {@link #proxy(ProxySelector)}. */
@@ -309,7 +304,7 @@ public final class B2cClient {
 
         /**
          * Koji certifikat smije potpisati odgovor, uz ispravan lanac do povjerljivih CA. Zadano: {@code CN=fiskalcis}
-         * (u testu {@code fiskalcistest}) i {@value B2cClient#OIB_APIS_IT} u subjektu, prema poglavlju 5 specifikacije.
+         * (u testu {@code fiskalcistest}) i {@value Okruzenje#OIB_APIS_IT} u subjektu, prema poglavlju 5 specifikacije.
          */
         public Builder potpisnikOdgovora(Predicate<X509Certificate> provjera) {
             postavke = postavke.potpisnikOdgovora(provjera);

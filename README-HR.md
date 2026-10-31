@@ -69,7 +69,7 @@ client.evidentirajNaplatu(new Naplata("1-P1-1", LocalDate.of(2026, 3, 1), "12345
 | Zahtjev ne prolazi XSD shemu ili iznos ima više od dvije decimale | `NeispravanZahtjevException`, ništa se ne šalje |
 | UBL nema obvezna polja | `UblException` sa **svim** pronađenim greškama |
 | Mreža, timeout, SOAP Fault, odgovor koji nije XML | `FiskalizacijaException` s HTTP statusom i sirovim odgovorom |
-| Odgovor bez `idZahtjeva`, za drugi `idZahtjeva` ili s više elemenata odgovora | `FiskalizacijaException` (mogući napad ili greška posrednika) |
+| Odgovor bez `idZahtjeva` ili s više elemenata odgovora | `FiskalizacijaException` (mogući napad ili greška posrednika) |
 | Potpisivanje ne uspije, npr. ključ koji nije RSA ni EC | `IllegalStateException` |
 | `null` argument | `NullPointerException` |
 
@@ -94,7 +94,7 @@ Rezultat r = client.obradiOdgovor(zahtjev, http.statusCode(), http.body());
 ```
 
 `zahtjev.soap()` šaljite bez izmjena, inače potpis više ne vrijedi, kao HTTP `POST` s headerima
-`Content-Type: application/xml; charset=utf-8` i `SOAPAction: ""`.
+`Content-Type: text/xml; charset=utf-8` i `SOAPAction: ""`.
 
 ## Provjera spremljenog odgovora
 
@@ -153,24 +153,29 @@ Podržane su sve operacije iz specifikacije:
 
 ## Otvorena pitanja
 
-Ove odluke treba potvrditi na testnom okruženju:
+Ovi izbori prate tehničke specifikacije, ali ih još treba potvrditi na testnom okruženju:
 
-1. Ista adresa servisa za eFiskalizaciju i eIzvještavanje (`:8511` test, `:8509` produkcija).
-2. Referenca potpisa je `URI="#<id>"` s enveloped transformacijom; službeni primjeri koriste `URI=""` s XPath Filter 2.0.
-3. `Content-Type: application/xml; charset=utf-8` umjesto uobičajenog `text/xml` za SOAP 1.1.
-4. Objavljeni primjeri odgovora potpisani su RSA-SHA1, a JDK-ov `secureValidation` SHA-1 odbija i ne može se
+1. Adresa Fiskalizacije 2.0: `https://cistest.apis-it.hr:8509/FiskalizacijaServiceEprod` (test) i
+   `https://cis.porezna-uprava.hr:8509/FiskalizacijaService` (produkcija), ista za eFiskalizaciju i eIzvještavanje
+   (specifikacija 2.0, poglavlje 10).
+2. Odgovore u oba sustava potpisuje aplikacijski certifikat APIS IT-a `fiskalcis` (u testu `fiskalcistest`), a ne
+   TLS certifikat (2.0 poglavlje 9, 1.0 poglavlje 5). Testni certifikat nosi OIB `02994650199`; pretpostavka je da ga
+   nosi i produkcijski. Ako ne, postavite vlastitu provjeru s `Builder.potpisnikOdgovora(...)`.
+3. `idZahtjeva` u odgovoru 2.0 generira Porezna (poglavlje 5.7.1.1), pa se ne uspoređuje s `id`-em zahtjeva;
+   `Rezultat` čuva oba.
+4. Zahtjevi su SOAP 1.1 s `Content-Type: text/xml; charset=utf-8`; specifikacija 2.0 traži SOAP 1.1 i WS-I, ali
+   zaglavlje ne navodi.
+5. XAdES potpis prati primjere iz specifikacije (SHA-512 sažetak certifikata, `IssuerSerialV2`, `DataObjectFormat`);
+   sam tekst traži samo XAdES-B.
+6. Objavljeni primjeri odgovora 2.0 potpisani su RSA-SHA1, a JDK-ov `secureValidation` SHA-1 odbija i ne može se
    dopustiti samo za jedan kontekst. Zato je isključen, a njegova bitna pravila provjeravaju se eksplicitno: samo
-   reference unutar dokumenta, popis dopuštenih algoritama i transformacija, RSA ključ od najmanje 2048 bita i EC ključ od najmanje 256.
-5. Svaki porezni obveznik ima FINA certifikat, pa ispravan lanac nije dovoljan. Zadano subjekt potpisnika odgovora
-   mora imati OIB Ministarstva financija (`18683136487`), kao Poreznin TLS certifikat. Ako Porezna odgovore
-   potpisuje drugim certifikatom, postavite vlastitu provjeru s `Builder.potpisnikOdgovora(...)`.
-6. B2C odgovori: zadano potpisnik mora biti `CN=fiskalcis` (u testu `fiskalcistest`, kao u poglavlju 5
-   specifikacije) s OIB-om APIS IT-a (`02994650199`).
+   reference unutar dokumenta, popis dopuštenih algoritama i transformacija, RSA ključ od najmanje 2048 bita i EC
+   ključ od najmanje 256.
 7. B2C `prijaviRadnoVrijeme` šalje se sa SOAPAction od `promijeniPodatkeRacuna`, kao u službenom WSDL-u v1.10.
 
-OIB se priznaje samo tamo gdje ga FINA upisuje: u organizationIdentifier (`HR02994650199` u `fiskalcistest`) ili u
-serialNumber (`VATHR-18683136487.341` u Poreznom certifikatu), nikad drugdje u subjektu, koji vlasnik certifikata
-dijelom bira sam.
+Svaki porezni obveznik ima FINA certifikat, pa ispravan lanac sam nije dovoljan. OIB se priznaje samo tamo gdje ga
+FINA upisuje: u organizationIdentifier (`HR02994650199` u `fiskalcistest`) ili u serialNumber
+(`VATHR-18683136487.341` u Poreznom TLS certifikatu), nikad drugdje u subjektu, koji vlasnik certifikata dijelom bira sam.
 
 ## Što još nije napravljeno
 

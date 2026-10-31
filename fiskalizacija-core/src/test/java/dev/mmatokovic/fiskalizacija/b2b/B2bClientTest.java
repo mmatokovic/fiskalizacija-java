@@ -44,6 +44,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -102,7 +103,6 @@ class B2bClientTest {
         assertNull(r.greska());
         assertEquals(PotpisOdgovora.ISPRAVAN, r.potpisOdgovora());
         assertEquals(200, r.httpStatus());
-        assertEquals(r.idZahtjeva(), r.odgovor().idZahtjeva());
         assertEquals(poslano.get(0), r.soapOdgovor());
     }
 
@@ -115,7 +115,7 @@ class B2bClientTest {
 
         assertEquals(1, primljeno.size());
         assertEquals(r.soapZahtjev(), primljeno.get(0));
-        assertEquals("application/xml; charset=utf-8", contentType.get(0));
+        assertEquals("text/xml; charset=utf-8", contentType.get(0));
         assertEquals("\"\"", soapAction.get(0));
         var dokument = Xml.parsiraj(primljeno.get(0));
         var zahtjev = (org.w3c.dom.Element) dokument.getElementsByTagNameNS(Zahtjevi.NS_EFIS, "EvidentirajERacunZahtjev").item(0);
@@ -127,8 +127,7 @@ class B2bClientTest {
     @Test
     void odbijenZahtjevIzSluzbenogPrimjeraNijeIznimka() {
         status = 200;
-        odgovor = Primjeri.tekst("/primjeri/izvjestavanje/Neuspjesan_Odgovor_EvidentirajNaplatu.xml")
-                .replace("22bc1e3e-feb4-47d5-95cd-2a0cfcc0bd71", ID_ZAHTJEVA);
+        odgovor = Primjeri.tekst("/primjeri/izvjestavanje/Neuspjesan_Odgovor_EvidentirajNaplatu.xml");
 
         var r = client().evidentirajNaplatu(naplata());
 
@@ -136,7 +135,7 @@ class B2bClientTest {
         assertEquals("S009", r.greska().sifra());
         assertEquals(1, r.greska().redniBrojZapisa());
         assertEquals("Ne postoji evidentirana fiskalizacija eRačuna.", r.greska().opis());
-        assertEquals(r.idZahtjeva(), r.odgovor().idZahtjeva());
+        assertEquals("22bc1e3e-feb4-47d5-95cd-2a0cfcc0bd71", r.odgovor().idZahtjeva());
         assertEquals(PotpisOdgovora.NEISPRAVAN, r.potpisOdgovora());
     }
 
@@ -202,14 +201,16 @@ class B2bClientTest {
     }
 
     @Test
-    void odgovorZaDrugiZahtjevJeIznimka() {
+    void idZahtjevaUOdgovoruGeneriraPorezna() {
         status = 200;
         odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>")
-                .replace(ID_ZAHTJEVA, "neki-drugi-zahtjev");
+                .replace(ID_ZAHTJEVA, "6c674534-1fa7-4d12-a4b3-a95bbd3fefc3");
 
-        var e = assertThrows(FiskalizacijaException.class, () -> client().evidentirajNaplatu(naplata()));
+        var r = client().evidentirajNaplatu(naplata());
 
-        assertTrue(e.getMessage().contains("neki-drugi-zahtjev"), e.getMessage());
+        assertTrue(r.prihvacen());
+        assertEquals("6c674534-1fa7-4d12-a4b3-a95bbd3fefc3", r.odgovor().idZahtjeva());
+        assertNotEquals(r.idZahtjeva(), r.odgovor().idZahtjeva());
     }
 
     @Test

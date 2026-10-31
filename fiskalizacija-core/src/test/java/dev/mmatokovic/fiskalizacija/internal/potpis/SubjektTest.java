@@ -1,7 +1,6 @@
 package dev.mmatokovic.fiskalizacija.internal.potpis;
 
-import dev.mmatokovic.fiskalizacija.b2b.B2bClient;
-import dev.mmatokovic.fiskalizacija.b2c.B2cClient;
+import dev.mmatokovic.fiskalizacija.Okruzenje;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -17,32 +16,34 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class SubjektTest {
 
+    private static final String MINISTARSTVO_FINANCIJA = "18683136487";
+
     private final X509Certificate fiskalcistest = certifikat("fiskalcistest.pem");
     private final X509Certificate porezna = certifikat("cis.porezna-uprava.hr.pem");
     private final X509Certificate lazni = certifikat("oib-izvan-atributa.pem");
 
     @Test
     void oibIzOrganizationIdentifiera() {
-        assertThat(Subjekt.sadrziOib(B2cClient.OIB_APIS_IT)).accepts(fiskalcistest);
+        assertThat(Subjekt.sadrziOib(Okruzenje.OIB_APIS_IT)).accepts(fiskalcistest);
     }
 
     @Test
     void oibIzSerialNumbera() {
-        assertThat(Subjekt.sadrziOib(B2bClient.OIB_MINISTARSTVA_FINANCIJA)).accepts(porezna);
+        assertThat(Subjekt.sadrziOib(MINISTARSTVO_FINANCIJA)).accepts(porezna);
     }
 
     @Test
     void oibIzvanTihAtributaSeNePrihvaca() {
-        assertThat(Subjekt.sadrziOib(B2bClient.OIB_MINISTARSTVA_FINANCIJA)).rejects(lazni);
-        assertThat(Subjekt.sadrziOib(B2cClient.OIB_APIS_IT)).rejects(lazni);
-        assertThat(Subjekt.potpisnik("18683136487 VATHR-18683136487", B2bClient.OIB_MINISTARSTVA_FINANCIJA)).rejects(lazni);
+        assertThat(Subjekt.sadrziOib(MINISTARSTVO_FINANCIJA)).rejects(lazni);
+        assertThat(Subjekt.sadrziOib(Okruzenje.OIB_APIS_IT)).rejects(lazni);
+        assertThat(Subjekt.potpisnik("18683136487 VATHR-18683136487", MINISTARSTVO_FINANCIJA)).rejects(lazni);
     }
 
     @Test
     void potpisnikTrebaIstiCnIOib() {
-        assertThat(Subjekt.potpisnik("fiskalcistest", B2cClient.OIB_APIS_IT)).accepts(fiskalcistest);
-        assertThat(Subjekt.potpisnik("fiskalcis", B2cClient.OIB_APIS_IT)).rejects(fiskalcistest);
-        assertThat(Subjekt.potpisnik("fiskalcistest", B2bClient.OIB_MINISTARSTVA_FINANCIJA)).rejects(fiskalcistest);
+        assertThat(Subjekt.potpisnik("fiskalcistest", Okruzenje.OIB_APIS_IT)).accepts(fiskalcistest);
+        assertThat(Subjekt.potpisnik("fiskalcis", Okruzenje.OIB_APIS_IT)).rejects(fiskalcistest);
+        assertThat(Subjekt.potpisnik("fiskalcistest", MINISTARSTVO_FINANCIJA)).rejects(fiskalcistest);
     }
 
     private static X509Certificate certifikat(String ime) {
