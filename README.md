@@ -1,6 +1,6 @@
-# fiskalizacija2-java
+# fiskalizacija-java
 
-[![build](https://github.com/mmatokovic/fiskalizacija2-java/actions/workflows/build.yml/badge.svg)](https://github.com/mmatokovic/fiskalizacija2-java/actions/workflows/build.yml)
+[![build](https://github.com/mmatokovic/fiskalizacija-java/actions/workflows/build.yml/badge.svg)](https://github.com/mmatokovic/fiskalizacija-java/actions/workflows/build.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 ![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)
 
@@ -29,13 +29,13 @@ Not yet published to Maven Central. Until then, run `./mvnw install` and add:
 
 ```xml
 <dependency>
-    <groupId>dev.mmatokovic.fiskalizacija2</groupId>
-    <artifactId>fiskalizacija2-core</artifactId>
+    <groupId>dev.mmatokovic.fiskalizacija</groupId>
+    <artifactId>fiskalizacija-core</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
 
-For JPMS projects: `requires dev.mmatokovic.fiskalizacija2;`
+For JPMS projects: `requires dev.mmatokovic.fiskalizacija;`
 
 ## Example
 
@@ -135,7 +135,7 @@ These choices need confirming on the test environment:
 
 ## Not done yet
 
-- Spring Boot 4 starter (`fiskalizacija2-spring-boot-starter`)
+- Spring Boot 4 starter (`fiskalizacija-spring-boot-starter`)
 - `OvlastenjaFiskalizacije` (fetching authorisations)
 - Fiskalizacija 1.0 (B2C, CIS), including ZKI
 - Publishing to Maven Central
@@ -144,12 +144,12 @@ These choices need confirming on the test environment:
 
 | Artifact | Contents |
 |---|---|
-| `fiskalizacija2-core` | fiscalization and eIzvještavanje messages, UBL parsing, signing; JDK only |
-| `fiskalizacija2-eracun` | eRačun validation against UBL XSD, EN 16931 and HR CIUS rules (uses phax ph-ubl and phive-rules); in progress, not published yet |
+| `fiskalizacija-core` | fiscalization and eIzvještavanje messages, UBL parsing, signing; JDK only |
+| `fiskalizacija-eracun` | eRačun validation against UBL XSD, EN 16931 and HR CIUS rules (uses phax ph-ubl and phive-rules); in progress, not published yet |
 
-`fiskalizacija2-core` is the JPMS module `dev.mmatokovic.fiskalizacija2`. The public API is the
-`dev.mmatokovic.fiskalizacija2` and `dev.mmatokovic.fiskalizacija2.model` packages; the module does not export
-`dev.mmatokovic.fiskalizacija2.internal`, which may change without notice. Before 1.0.0 the public API may change
+`fiskalizacija-core` is the JPMS module `dev.mmatokovic.fiskalizacija`. The public API is the
+`dev.mmatokovic.fiskalizacija` and `dev.mmatokovic.fiskalizacija.model` packages; the module does not export
+`dev.mmatokovic.fiskalizacija.internal`, which may change without notice. Before 1.0.0 the public API may change
 between minor versions (see [CHANGELOG.md](CHANGELOG.md)).
 
 ## Build
@@ -162,7 +162,7 @@ Tests need no network and no real certificate: they use the official Porezna upr
 (`src/test/resources/primjeri`) and a self-signed test certificate. The official eRačun examples are dated 2025,
 while the message schema only allows issue dates from 2026-01-01, so the tests move them to 2026.
 
-The test coverage report is in `fiskalizacija2-core/target/site/jacoco/index.html`.
+The test coverage report is in `fiskalizacija-core/target/site/jacoco/index.html`.
 
 ## Test environment
 

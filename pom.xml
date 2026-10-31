@@ -4,14 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>dev.mmatokovic.fiskalizacija2</groupId>
-    <artifactId>fiskalizacija2-parent</artifactId>
+    <groupId>dev.mmatokovic.fiskalizacija</groupId>
+    <artifactId>fiskalizacija-parent</artifactId>
     <version>${revision}</version>
     <packaging>pom</packaging>
 
-    <name>fiskalizacija2-java</name>
+    <name>fiskalizacija-java</name>
     <description>Java klijent za Fiskalizaciju 2.0: evidentiranje eRačuna i eIzvještavanje</description>
-    <url>https://github.com/mmatokovic/fiskalizacija2-java</url>
+    <url>https://github.com/mmatokovic/fiskalizacija-java</url>
     <inceptionYear>2026</inceptionYear>
     <licenses>
         <license>
@@ -27,23 +27,23 @@
         </developer>
     </developers>
     <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
-        <connection>scm:git:https://github.com/mmatokovic/fiskalizacija2-java.git</connection>
-        <developerConnection>scm:git:git@github.com:mmatokovic/fiskalizacija2-java.git</developerConnection>
-        <url>https://github.com/mmatokovic/fiskalizacija2-java</url>
+        <connection>scm:git:https://github.com/mmatokovic/fiskalizacija-java.git</connection>
+        <developerConnection>scm:git:git@github.com:mmatokovic/fiskalizacija-java.git</developerConnection>
+        <url>https://github.com/mmatokovic/fiskalizacija-java</url>
         <tag>HEAD</tag>
     </scm>
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/mmatokovic/fiskalizacija2-java/issues</url>
+        <url>https://github.com/mmatokovic/fiskalizacija-java/issues</url>
     </issueManagement>
     <ciManagement>
         <system>GitHub Actions</system>
-        <url>https://github.com/mmatokovic/fiskalizacija2-java/actions</url>
+        <url>https://github.com/mmatokovic/fiskalizacija-java/actions</url>
     </ciManagement>
 
     <modules>
-        <module>fiskalizacija2-core</module>
-        <module>fiskalizacija2-eracun</module>
+        <module>fiskalizacija-core</module>
+        <module>fiskalizacija-eracun</module>
     </modules>
 
     <properties>
@@ -297,7 +297,7 @@
                             <autoPublish>false</autoPublish>
                             <waitUntil>validated</waitUntil>
                             <excludeArtifacts>
-                                <excludeArtifact>fiskalizacija2-eracun</excludeArtifact>
+                                <excludeArtifact>fiskalizacija-eracun</excludeArtifact>
                             </excludeArtifacts>
                         </configuration>
                     </plugin>

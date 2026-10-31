@@ -8,13 +8,13 @@
 
 Only JDK 17+ is required; the wrapper downloads Maven. Unit tests need no network and no real certificate.
 `PoreznaTestnoOkruzenjeIT` calls the real Porezna uprava test environment and runs only when `FISK_P12`,
-`FISK_P12_LOZINKA` and `FISK_OIB` are set (see the README). Coverage report: `fiskalizacija2-core/target/site/jacoco/index.html`.
+`FISK_P12_LOZINKA` and `FISK_OIB` are set (see the README). Coverage report: `fiskalizacija-core/target/site/jacoco/index.html`.
 
 ## Rules
 
-- `fiskalizacija2-core` must have no external dependencies, only the JDK.
-- The public API is `dev.mmatokovic.fiskalizacija2` and `dev.mmatokovic.fiskalizacija2.model`. Everything else goes in
-  `dev.mmatokovic.fiskalizacija2.internal`, which `module-info.java` does not export.
+- `fiskalizacija-core` must have no external dependencies, only the JDK.
+- The public API is `dev.mmatokovic.fiskalizacija` and `dev.mmatokovic.fiskalizacija.model`. Everything else goes in
+  `dev.mmatokovic.fiskalizacija.internal`, which `module-info.java` does not export.
 - Write javadoc where it tells the reader something the signature does not. Doclint checks syntax and references.
 - Domain names (classes, fields, methods) stay in Croatian and follow the official XSD and specification terms.
 - Every behaviour change comes with a test, preferably against an official Porezna uprava example in

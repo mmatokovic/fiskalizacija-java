@@ -7,6 +7,6 @@ target/
 
 *.p12
 
-!fiskalizacija2-core/src/test/resources/test-potpis.p12
-!fiskalizacija2-core/src/test/resources/test-lanac.p12
+!fiskalizacija-core/src/test/resources/test-potpis.p12
+!fiskalizacija-core/src/test/resources/test-lanac.p12
 .flattened-pom.xml

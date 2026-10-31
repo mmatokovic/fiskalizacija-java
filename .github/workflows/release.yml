@@ -51,7 +51,7 @@ jobs:
       - name: Create GitHub release
         run: |
           awk -v v="$VERSION" 'index($0, "## [" v "]") == 1 { p = 1; next } /^## \[/ { p = 0 } p' CHANGELOG.md > notes.md
-          printf '\n[Maven Central](https://central.sonatype.com/artifact/dev.mmatokovic.fiskalizacija2/fiskalizacija2-core/%s)\n' "$VERSION" >> notes.md
+          printf '\n[Maven Central](https://central.sonatype.com/artifact/dev.mmatokovic.fiskalizacija/fiskalizacija-core/%s)\n' "$VERSION" >> notes.md
           gh release create "$GITHUB_REF_NAME" --title "$VERSION" --notes-file notes.md --verify-tag --draft
         env:
           VERSION: ${{ steps.tag.outputs.version }}

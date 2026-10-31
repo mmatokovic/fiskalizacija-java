@@ -2,8 +2,8 @@
 * Assume that the maintainers and readers of the code are experienced Java developers:
    * Don't use comments to explain the obvious.
    * Use self-explanatory names.
-* `fiskalizacija2-core` depends on the JDK only. Keep it that way.
-* The public API is `dev.mmatokovic.fiskalizacija2` and `dev.mmatokovic.fiskalizacija2.model`. Everything else goes in `dev.mmatokovic.fiskalizacija2.internal`. Never make something public that isn't needed outside the module.
+* `fiskalizacija-core` depends on the JDK only. Keep it that way.
+* The public API is `dev.mmatokovic.fiskalizacija` and `dev.mmatokovic.fiskalizacija.model`. Everything else goes in `dev.mmatokovic.fiskalizacija.internal`. Never make something public that isn't needed outside the module.
 * Domain names are Croatian and follow the official XSD schemas and specification (`Racun`, `evidentirajERacun`). Don't translate them, and use standard Croatian (`obvezan`, not `obavezan`).
 * Write javadoc only where it adds information the signature doesn't already give.
 * Look for an existing helper (`internal/Xml`, `UblParser.Citac`) before writing a new one.

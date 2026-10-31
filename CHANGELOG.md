@@ -10,7 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   `EvidentirajIsporukuZaKojuNijeIzdanERacun`.
 - Reading UBL 2.1 eRačun (HR CIUS), XAdES-B request signing, response signature check up to the FINA CA,
   XSD validation before sending.
-- JPMS module `dev.mmatokovic.fiskalizacija2`; the `dev.mmatokovic.fiskalizacija2.internal` package is not exported.
+- JPMS module `dev.mmatokovic.fiskalizacija`; the `dev.mmatokovic.fiskalizacija.internal` package is not exported.
 - `Oib.ispravan` checks an OIB's check digit (ISO 7064, MOD 11,10). `UblParser` reports an invalid OIB of the seller,
   buyer or operator as an error.
 - Integration tests against the Porezna uprava test environment (`PoreznaTestnoOkruzenjeIT`), skipped unless a demo
@@ -20,7 +20,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   validated as of the time the response was received (`Rezultat.primljeno()`).
 - `pripremi*` methods return a signed, validated `PripremljeniZahtjev` without sending it; `posalji` sends it and
   `obradiOdgovor` processes a response received through your own HTTP client.
-- `fiskalizacija2-eracun` module (not published yet): `ERacunValidator` checks an eRačun against the UBL XSD, EN 16931
+- `fiskalizacija-eracun` module (not published yet): `ERacunValidator` checks an eRačun against the UBL XSD, EN 16931
   and the HR CIUS rules. `Iznosi.izracunaj` computes line, VAT breakdown and document totals from `StavkaRacuna`
   lines by the EN 16931 rules (VAT per category and rate on the summed base, rounded half up to the cent).
 - `Builder.proxy` for a forward proxy and `Builder.potpisnikOdgovora` to choose which certificate may sign responses.
