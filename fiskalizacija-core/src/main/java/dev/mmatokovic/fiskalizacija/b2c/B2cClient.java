@@ -6,16 +6,15 @@ import dev.mmatokovic.fiskalizacija.NeispravanZahtjevException;
 import dev.mmatokovic.fiskalizacija.Okruzenje;
 import dev.mmatokovic.fiskalizacija.PotpisOdgovora;
 import dev.mmatokovic.fiskalizacija.Potpisivac;
-import dev.mmatokovic.fiskalizacija.internal.B2cOdgovori;
-import dev.mmatokovic.fiskalizacija.internal.B2cZahtjevi;
-import dev.mmatokovic.fiskalizacija.internal.PristupKljucu;
-import dev.mmatokovic.fiskalizacija.internal.ProvjeraPotpisa;
-import dev.mmatokovic.fiskalizacija.internal.SoapPoziv;
-import dev.mmatokovic.fiskalizacija.internal.Subjekt;
-import dev.mmatokovic.fiskalizacija.internal.Xml;
-import dev.mmatokovic.fiskalizacija.internal.XmlDsig;
-import dev.mmatokovic.fiskalizacija.internal.Xsd;
-import dev.mmatokovic.fiskalizacija.internal.Zahtjevi;
+import dev.mmatokovic.fiskalizacija.internal.b2c.B2cOdgovori;
+import dev.mmatokovic.fiskalizacija.internal.b2c.B2cZahtjevi;
+import dev.mmatokovic.fiskalizacija.internal.http.Postavke;
+import dev.mmatokovic.fiskalizacija.internal.http.SoapPoziv;
+import dev.mmatokovic.fiskalizacija.internal.potpis.PristupKljucu;
+import dev.mmatokovic.fiskalizacija.internal.potpis.Subjekt;
+import dev.mmatokovic.fiskalizacija.internal.potpis.XmlDsig;
+import dev.mmatokovic.fiskalizacija.internal.xml.Xml;
+import dev.mmatokovic.fiskalizacija.internal.xml.Xsd;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -39,7 +38,7 @@ import java.util.function.Predicate;
  * Klijent za fiskalizaciju računa u krajnjoj potrošnji (B2C) prema tehničkoj specifikaciji v2.7.
  * Thread-safe; jednu instancu dijele svi pozivi.
  *
- * <p>Greška Sustava za fiskalizaciju je {@link B2cRezultat} s {@code prihvacen() == false}. Iznimke:
+ * <p>Greška Sustava za fiskalizaciju je {@link Rezultat} s {@code prihvacen() == false}. Iznimke:
  * {@link NeispravanZahtjevException} kad poruka nije valjana (XSD, iznos s više od dvije decimale) i ništa se ne šalje,
  * {@link FiskalizacijaException} kad slanje ne uspije ili odgovor nije valjan, {@link IllegalStateException} kad
  * potpisivanje ne uspije (ključ mora biti RSA). Račun bez JIR-a izdaje se kupcu sa ZKI-jem i naknadno šalje s
@@ -58,30 +57,14 @@ public final class B2cClient {
     private static final String SOAP_ACTION = "http://e-porezna.porezna-uprava.hr/fiskalizacija/2012/services/FiskalizacijaService/";
     private static final String CONTENT_TYPE = "text/xml; charset=utf-8";
 
-    private final URI adresa;
+    private final Postavke postavke;
     private final Potpisivac potpisivac;
-    private final Set<TrustAnchor> sidra;
-    private final List<X509Certificate> posrednici;
-    private final Duration timeout;
-    private final boolean xsdValidacija;
-    private final Clock sat;
-    private final Predicate<X509Certificate> potpisnikOdgovora;
     private final HttpClient http;
 
     private B2cClient(Builder b) {
-        this.adresa = b.adresa;
+        this.postavke = b.postavke;
         this.potpisivac = b.potpisivac;
-        this.sidra = b.sidra;
-        this.posrednici = b.posrednici;
-        this.timeout = b.timeout;
-        this.xsdValidacija = b.xsdValidacija;
-        this.sat = b.sat;
-        this.potpisnikOdgovora = b.potpisnikOdgovora;
-        var http = HttpClient.newBuilder().sslContext(b.ssl).connectTimeout(b.timeout);
-        if (b.proxy != null) {
-            http.proxy(b.proxy);
-        }
-        this.http = http.build();
+        this.http = b.postavke.httpClient();
     }
 
     /** Okruženje određuje adresu servisa i povjerljive FINA certifikate; {@code potpisivac} potpisuje zahtjeve. */
@@ -96,20 +79,20 @@ public final class B2cClient {
      * @throws NeispravanZahtjevException ako poruka ne prolazi XSD shemu; ništa se ne šalje
      * @throws FiskalizacijaException     ako poziv ne uspije ili odgovor nije valjan
      */
-    public B2cRezultat racun(Racun racun) {
+    public Rezultat racun(Racun racun) {
         String zastKod = zastKod(racun);
-        return posalji(B2cZahtjevi.racun(racun, zastKod, sat), zastKod, "racuni", "RacunOdgovor");
+        return posalji(B2cZahtjevi.racun(racun, zastKod, postavke.sat()), zastKod, "racuni", "RacunOdgovor");
     }
 
     /**
      * Provjerava račun bez evidentiranja ({@code ProvjeraZahtjev}); postoji samo u testnom okruženju. Rezultati provjere
-     * dolaze kao {@link B2cRezultat#greske()} sa šiframa {@code vXXX}.
+     * dolaze kao {@link Rezultat#greske()} sa šiframa {@code vXXX}.
      *
      * @see #racun(Racun)
      */
-    public B2cRezultat provjera(Racun racun) {
+    public Rezultat provjera(Racun racun) {
         String zastKod = zastKod(racun);
-        return posalji(B2cZahtjevi.provjera(racun, zastKod, sat), zastKod, "provjera", "ProvjeraOdgovor");
+        return posalji(B2cZahtjevi.provjera(racun, zastKod, postavke.sat()), zastKod, "provjera", "ProvjeraOdgovor");
     }
 
     /**
@@ -119,10 +102,10 @@ public final class B2cClient {
      * @param racun podaci računa kako su fiskalizirani, uključujući izvorni način plaćanja
      * @see #racun(Racun)
      */
-    public B2cRezultat promijeniNacPlac(Racun racun, NacinPlacanja promijenjeniNacinPlac) {
+    public Rezultat promijeniNacPlac(Racun racun, NacinPlacanja promijenjeniNacinPlac) {
         Objects.requireNonNull(promijenjeniNacinPlac, "promijenjeniNacinPlac");
         String zastKod = zastKod(racun);
-        return posalji(B2cZahtjevi.promijeniNacPlac(racun, zastKod, promijenjeniNacinPlac, sat), zastKod, "promijeniNacPlac",
+        return posalji(B2cZahtjevi.promijeniNacPlac(racun, zastKod, promijenjeniNacinPlac, postavke.sat()), zastKod, "promijeniNacPlac",
                 "PromijeniNacPlacOdgovor");
     }
 
@@ -135,10 +118,10 @@ public final class B2cClient {
      * @param oibPrimateljaRacuna   OIB primatelja nakon promjene, ili {@code null} da se obriše
      * @see #racun(Racun)
      */
-    public B2cRezultat promijeniPodatkeRacuna(Racun racun, NacinPlacanja nacinPlac, String oibPrimateljaRacuna) {
+    public Rezultat promijeniPodatkeRacuna(Racun racun, NacinPlacanja nacinPlac, String oibPrimateljaRacuna) {
         Objects.requireNonNull(nacinPlac, "nacinPlac");
         String zastKod = zastKod(racun);
-        return posalji(B2cZahtjevi.promijeniPodatkeRacuna(racun, zastKod, nacinPlac, oibPrimateljaRacuna, sat), zastKod,
+        return posalji(B2cZahtjevi.promijeniPodatkeRacuna(racun, zastKod, nacinPlac, oibPrimateljaRacuna, postavke.sat()), zastKod,
                 "promijeniPodatkeRacuna", "PromijeniPodatkeRacunaOdgovor");
     }
 
@@ -148,10 +131,10 @@ public final class B2cClient {
      * @param racun podaci računa kako su fiskalizirani
      * @see #racun(Racun)
      */
-    public B2cRezultat napojnica(Racun racun, Napojnica napojnica) {
+    public Rezultat napojnica(Racun racun, Napojnica napojnica) {
         Objects.requireNonNull(napojnica, "napojnica");
         String zastKod = zastKod(racun);
-        return posalji(B2cZahtjevi.napojnica(racun, zastKod, napojnica, sat), zastKod, "napojnica", "NapojnicaOdgovor");
+        return posalji(B2cZahtjevi.napojnica(racun, zastKod, napojnica, postavke.sat()), zastKod, "napojnica", "NapojnicaOdgovor");
     }
 
     /**
@@ -162,32 +145,32 @@ public final class B2cClient {
      * @param oibOper  OIB operatera
      * @see #racun(Racun)
      */
-    public B2cRezultat prijaviRadnoVrijeme(String oib, String oznPosPr, RadnoVrijeme radnoVrijeme, String oibOper) {
+    public Rezultat prijaviRadnoVrijeme(String oib, String oznPosPr, RadnoVrijeme radnoVrijeme, String oibOper) {
         Objects.requireNonNull(radnoVrijeme, "radnoVrijeme");
         // soapAction kao u službenom WSDL-u v1.10, iako upućuje na promijeniPodatkeRacuna
-        return posalji(B2cZahtjevi.prijaviRadnoVrijeme(oib, oznPosPr, radnoVrijeme, oibOper, sat), null,
+        return posalji(B2cZahtjevi.prijaviRadnoVrijeme(oib, oznPosPr, radnoVrijeme, oibOper, postavke.sat()), null,
                 "promijeniPodatkeRacuna", "PrijaviRadnoVrijemeOdgovor");
     }
 
     /** Briše buduća radna vremena poslovnog prostora. */
-    public B2cRezultat obrisiRadnoVrijeme(String oib, String oznPosPr, BrisanjeRadnogVremena brisanje, String oibOper) {
+    public Rezultat obrisiRadnoVrijeme(String oib, String oznPosPr, BrisanjeRadnogVremena brisanje, String oibOper) {
         Objects.requireNonNull(brisanje, "brisanje");
-        return posalji(B2cZahtjevi.obrisiRadnoVrijeme(oib, oznPosPr, brisanje, oibOper, sat), null, "obrisiRadnoVrijeme",
+        return posalji(B2cZahtjevi.obrisiRadnoVrijeme(oib, oznPosPr, brisanje, oibOper, postavke.sat()), null, "obrisiRadnoVrijeme",
                 "ObrisiRadnoVrijemeOdgovor");
     }
 
-    /** Dohvaća aktivna i buduća radna vremena; rezultat je u {@link B2cRezultat#radnoVrijeme()}. */
-    public B2cRezultat dohvatiRadnoVrijeme(String oib, String oznPosPr, VrstaRadnogVremena vrsta, String oibOper) {
+    /** Dohvaća aktivna i buduća radna vremena; rezultat je u {@link Rezultat#radnoVrijeme()}. */
+    public Rezultat dohvatiRadnoVrijeme(String oib, String oznPosPr, VrstaRadnogVremena vrsta, String oibOper) {
         Objects.requireNonNull(vrsta, "vrsta");
-        return posalji(B2cZahtjevi.dohvatiRadnoVrijeme(oib, oznPosPr, vrsta, oibOper, sat), null, "dohvatiRadnoVrijeme",
+        return posalji(B2cZahtjevi.dohvatiRadnoVrijeme(oib, oznPosPr, vrsta, oibOper, postavke.sat()), null, "dohvatiRadnoVrijeme",
                 "DohvatiRadnoVrijemeOdgovor");
     }
 
     /**
-     * Prijavljuje radno vrijeme za do 100 poslovnih prostora; ishod svakog je u {@link B2cRezultat#poslovnice()}.
+     * Prijavljuje radno vrijeme za do 100 poslovnih prostora; ishod svakog je u {@link Rezultat#poslovnice()}.
      */
-    public B2cRezultat prijaviRadnoVrijemeZaPoslovnice(String oib, List<Poslovnica> poslovnice, String oibOper) {
-        return posalji(B2cZahtjevi.prijaviRadnoVrijemeZaPoslovnice(oib, List.copyOf(poslovnice), oibOper, sat), null,
+    public Rezultat prijaviRadnoVrijemeZaPoslovnice(String oib, List<Poslovnica> poslovnice, String oibOper) {
+        return posalji(B2cZahtjevi.prijaviRadnoVrijemeZaPoslovnice(oib, List.copyOf(poslovnice), oibOper, postavke.sat()), null,
                 "prijaviRadnoVrijemeZaPoslovnice", "PrijaviRadnoVrijemeZaPoslovniceOdgovor");
     }
 
@@ -198,7 +181,7 @@ public final class B2cClient {
      * @throws FiskalizacijaException ako poziv ne uspije ili odgovor nema {@code EchoResponse}
      */
     public String echo(String poruka) {
-        var odgovor = SoapPoziv.posalji(http, adresa, timeout, CONTENT_TYPE, SOAP_ACTION + "echo",
+        var odgovor = SoapPoziv.posalji(http, postavke.adresa(), postavke.timeout(), CONTENT_TYPE, SOAP_ACTION + "echo",
                 Xml.serijaliziraj(B2cZahtjevi.echo(Objects.requireNonNull(poruka, "poruka"))));
         var echo = parsiraj(odgovor.status(), odgovor.tijelo()).getElementsByTagNameNS(B2cZahtjevi.NS_F73, "EchoResponse");
         if (echo.getLength() != 1) {
@@ -212,17 +195,17 @@ public final class B2cClient {
         return racun.zastKod() != null ? racun.zastKod() : Zki.izracunaj(potpisivac, racun);
     }
 
-    private B2cRezultat posalji(B2cZahtjevi.Zahtjev zahtjev, String zastKod, String operacija, String odgovorElement) {
+    private Rezultat posalji(B2cZahtjevi.Zahtjev zahtjev, String zastKod, String operacija, String odgovorElement) {
         XmlDsig.potpisi(zahtjev.element(), zahtjev.id(), PristupKljucu.kljuc(potpisivac), potpisivac.certifikat());
-        if (xsdValidacija) {
+        if (postavke.xsdValidacija()) {
             var greske = Xsd.greske(zahtjev.element());
             if (!greske.isEmpty()) {
                 throw new NeispravanZahtjevException(greske);
             }
         }
         String soap = Xml.serijaliziraj(zahtjev.dokument());
-        var odgovor = SoapPoziv.posalji(http, adresa, timeout, CONTENT_TYPE, SOAP_ACTION + operacija, soap);
-        Instant primljeno = sat.instant();
+        var odgovor = SoapPoziv.posalji(http, postavke.adresa(), postavke.timeout(), CONTENT_TYPE, SOAP_ACTION + operacija, soap);
+        Instant primljeno = postavke.sat().instant();
         int status = odgovor.status();
         String tijelo = odgovor.tijelo();
 
@@ -233,9 +216,9 @@ public final class B2cClient {
         }
         var odgovorEl = (Element) el.item(0);
         var greske = B2cOdgovori.greske(odgovorEl);
-        String jir = B2cOdgovori.tekst(odgovorEl, "Jir");
-        var zaglavlje = B2cOdgovori.dijete(odgovorEl, "Zaglavlje");
-        String idPoruke = zaglavlje == null ? null : B2cOdgovori.tekst(zaglavlje, "IdPoruke");
+        String jir = Xml.tekst(odgovorEl, "Jir");
+        var zaglavlje = Xml.dijete(odgovorEl, "Zaglavlje");
+        String idPoruke = zaglavlje == null ? null : Xml.tekst(zaglavlje, "IdPoruke");
         boolean bezIdaUzGresku = (idPoruke == null || idPoruke.isEmpty()) && jir == null && !greske.isEmpty();
         if (!bezIdaUzGresku && !zahtjev.idPoruke().equals(idPoruke)) {
             throw new FiskalizacijaException("Odgovor je za poruku " + idPoruke + ", a poslana je " + zahtjev.idPoruke()
@@ -248,8 +231,8 @@ public final class B2cClient {
             throw new FiskalizacijaException("Neispravno radno vrijeme u odgovoru: " + e.getMessage() + " (HTTP " + status + ")",
                     status, tijelo, e);
         }
-        PotpisOdgovora potpis = ProvjeraPotpisa.provjeri(odgovorEl, sidra, posrednici, null, potpisnikOdgovora);
-        return new B2cRezultat(zahtjev.idPoruke(), jir, zastKod, B2cOdgovori.poruka(odgovorEl), radnoVrijeme,
+        PotpisOdgovora potpis = postavke.provjeriPotpis(odgovorEl, null);
+        return new Rezultat(zahtjev.idPoruke(), jir, zastKod, B2cOdgovori.poruka(odgovorEl), radnoVrijeme,
                 B2cOdgovori.poslovnice(odgovorEl), greske, potpis, status, soap, tijelo, primljeno);
     }
 
@@ -260,9 +243,9 @@ public final class B2cClient {
         } catch (Exception e) {
             throw new FiskalizacijaException("Odgovor nije XML (HTTP " + status + ")", status, tijelo, e);
         }
-        var fault = dokument.getElementsByTagNameNS(Zahtjevi.NS_SOAP, "Fault");
+        var fault = dokument.getElementsByTagNameNS(SoapPoziv.NS_SOAP, "Fault");
         if (fault.getLength() > 0) {
-            throw new FiskalizacijaException("SOAP Fault: " + B2cOdgovori.tekst((Element) fault.item(0), "faultstring")
+            throw new FiskalizacijaException("SOAP Fault: " + Xml.tekst((Element) fault.item(0), "faultstring")
                     + " (HTTP " + status + ")", status, tijelo, null);
         }
         return dokument;
@@ -272,30 +255,19 @@ public final class B2cClient {
     public static final class Builder {
 
         private final Potpisivac potpisivac;
-        private URI adresa;
-        private Set<TrustAnchor> sidra;
-        private List<X509Certificate> posrednici;
-        private SSLContext ssl;
-        private Duration timeout = Duration.ofSeconds(30);
-        private boolean xsdValidacija = true;
-        private Clock sat = Clock.system(ZoneId.of("Europe/Zagreb"));
-        private Predicate<X509Certificate> potpisnikOdgovora;
-        private ProxySelector proxy;
+        private Postavke postavke;
 
         private Builder(Okruzenje okruzenje, Potpisivac potpisivac) {
             this.potpisivac = potpisivac;
-            this.adresa = okruzenje == Okruzenje.TEST
-                    ? URI.create("https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest")
-                    : URI.create("https://cis.porezna-uprava.hr:8449/FiskalizacijaService");
-            this.potpisnikOdgovora = Subjekt.potpisnik(okruzenje == Okruzenje.TEST ? "fiskalcistest" : "fiskalcis", OIB_APIS_IT);
-            this.sidra = FinaCertifikati.sidra(okruzenje);
-            this.posrednici = FinaCertifikati.posrednici(okruzenje);
-            this.ssl = FinaCertifikati.sslContext(okruzenje);
+            this.postavke = Postavke.zadane(okruzenje, okruzenje == Okruzenje.TEST
+                            ? URI.create("https://cistest.apis-it.hr:8449/FiskalizacijaServiceTest")
+                            : URI.create("https://cis.porezna-uprava.hr:8449/FiskalizacijaService"),
+                    Subjekt.potpisnik(okruzenje == Okruzenje.TEST ? "fiskalcistest" : "fiskalcis", OIB_APIS_IT));
         }
 
         /** Za gateway ili reverse proxy ispred servisa; za forward proxy vidi {@link #proxy(ProxySelector)}. */
         public Builder adresa(URI adresa) {
-            this.adresa = Objects.requireNonNull(adresa, "adresa");
+            postavke = postavke.adresa(adresa);
             return this;
         }
 
@@ -304,42 +276,37 @@ public final class B2cClient {
          * vrijeme oko 10, pa na naplatnom uređaju postavite kraće čekanje: račun bez JIR-a izdaje se i šalje naknadno.
          */
         public Builder timeout(Duration timeout) {
-            Objects.requireNonNull(timeout, "timeout");
-            if (timeout.isNegative() || timeout.isZero()) {
-                throw new IllegalArgumentException("timeout mora biti pozitivan: " + timeout);
-            }
-            this.timeout = timeout;
+            postavke = postavke.timeout(timeout);
             return this;
         }
 
         /** Uključeno po defaultu: neispravna poruka se ne šalje nego baca {@link NeispravanZahtjevException}. */
         public Builder xsdValidacija(boolean ukljuceno) {
-            this.xsdValidacija = ukljuceno;
+            postavke = postavke.xsdValidacija(ukljuceno);
             return this;
         }
 
         /** Umjesto zadanog konteksta, koji vjeruje FINA lancu ({@link FinaCertifikati#sslContext(Okruzenje)}). */
         public Builder sslContext(SSLContext ssl) {
-            this.ssl = Objects.requireNonNull(ssl, "ssl");
+            postavke = postavke.ssl(ssl);
             return this;
         }
 
         /** Povjerljivi CA za provjeru potpisa odgovora, umjesto ugrađenih FINA certifikata. */
         public Builder povjerljiviCertifikati(Set<TrustAnchor> sidra, List<X509Certificate> posrednici) {
-            this.sidra = Set.copyOf(sidra);
-            this.posrednici = List.copyOf(posrednici);
+            postavke = postavke.povjerljiviCertifikati(sidra, posrednici);
             return this;
         }
 
-        /** Sat za vrijeme slanja u zaglavlju i za {@link B2cRezultat#primljeno()}; korisno u testovima. */
+        /** Sat za vrijeme slanja u zaglavlju i za {@link Rezultat#primljeno()}; korisno u testovima. */
         public Builder sat(Clock sat) {
-            this.sat = Objects.requireNonNull(sat, "sat");
+            postavke = postavke.sat(sat);
             return this;
         }
 
         /** Forward proxy za HTTP vezu prema Poreznoj, npr. {@code ProxySelector.of(new InetSocketAddress("proxy", 8080))}. */
         public Builder proxy(ProxySelector proxy) {
-            this.proxy = Objects.requireNonNull(proxy, "proxy");
+            postavke = postavke.proxy(proxy);
             return this;
         }
 
@@ -348,7 +315,7 @@ public final class B2cClient {
          * (u testu {@code fiskalcistest}) i {@value B2cClient#OIB_APIS_IT} u subjektu, prema poglavlju 5 specifikacije.
          */
         public Builder potpisnikOdgovora(Predicate<X509Certificate> provjera) {
-            this.potpisnikOdgovora = Objects.requireNonNull(provjera, "provjera");
+            postavke = postavke.potpisnikOdgovora(provjera);
             return this;
         }
 

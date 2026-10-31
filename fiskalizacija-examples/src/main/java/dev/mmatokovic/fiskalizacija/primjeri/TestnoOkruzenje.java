@@ -1,9 +1,9 @@
 package dev.mmatokovic.fiskalizacija.primjeri;
 
-import dev.mmatokovic.fiskalizacija.FiskalizacijaClient;
 import dev.mmatokovic.fiskalizacija.Okruzenje;
 import dev.mmatokovic.fiskalizacija.Potpisivac;
-import dev.mmatokovic.fiskalizacija.Rezultat;
+import dev.mmatokovic.fiskalizacija.b2b.B2bClient;
+import dev.mmatokovic.fiskalizacija.b2b.Rezultat;
 import dev.mmatokovic.fiskalizacija.b2c.B2cClient;
 
 import java.io.IOException;
@@ -16,7 +16,7 @@ import java.time.ZoneId;
 
 /**
  * Klijent za testno okruženje Porezne uprave iz varijabli okoline {@code FISK_P12}, {@code FISK_P12_LOZINKA} i
- * {@code FISK_OIB}, kao u {@code PoreznaTestnoOkruzenjeIT}.
+ * {@code FISK_OIB}, kao u {@code B2bTestnoOkruzenjeIT}.
  */
 final class TestnoOkruzenje {
 
@@ -25,8 +25,8 @@ final class TestnoOkruzenje {
     private TestnoOkruzenje() {
     }
 
-    static FiskalizacijaClient klijent() {
-        return FiskalizacijaClient.builder(Okruzenje.TEST, potpisivac()).build();
+    static B2bClient klijent() {
+        return B2bClient.builder(Okruzenje.TEST, potpisivac()).build();
     }
 
     static B2cClient b2cKlijent() {

@@ -1,5 +1,7 @@
 package dev.mmatokovic.fiskalizacija;
 
+import dev.mmatokovic.fiskalizacija.b2b.Rezultat;
+
 import java.io.Serial;
 
 /**

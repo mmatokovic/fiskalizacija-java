@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Pravi pozivi na testno okruženje fiskalizacije u krajnjoj potrošnji. Pokreću se samo uz varijable okoline
- * {@code FISK_P12}, {@code FISK_P12_LOZINKA} i {@code FISK_OIB}, kao {@code PoreznaTestnoOkruzenjeIT}. Računi i radno
+ * {@code FISK_P12}, {@code FISK_P12_LOZINKA} i {@code FISK_OIB}, kao {@code B2bTestnoOkruzenjeIT}. Računi i radno
  * vrijeme trebaju još {@code FISK_OZN_POS_PR}, poslovni prostor otvoren na OIB demo certifikata.
  *
  * <pre>{@code ./mvnw verify -Dit.test=B2cTestnoOkruzenjeIT}</pre>
@@ -82,7 +82,7 @@ class B2cTestnoOkruzenjeIT {
                 .build();
     }
 
-    private static void prihvacen(B2cRezultat r) {
+    private static void prihvacen(Rezultat r) {
         assertThat(r.prihvacen()).as(() -> r + "\n" + r.soapOdgovor()).isTrue();
     }
 }

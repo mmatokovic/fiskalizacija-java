@@ -38,7 +38,7 @@ Za JPMS projekte: `requires dev.mmatokovic.fiskalizacija;`
 
 ```java
 var potpisivac = Potpisivac.izP12(Path.of("aplikacijski-certifikat.p12"), lozinka);
-var client = FiskalizacijaClient.builder(Okruzenje.TEST, potpisivac).build();
+var client = B2bClient.builder(Okruzenje.TEST, potpisivac).build();
 
 Racun racun = UblParser.racun(Files.readAllBytes(Path.of("eracun.xml")));
 Rezultat r = client.evidentirajERacun(VrstaERacuna.IZLAZNI, racun);
@@ -129,7 +129,7 @@ var racun = Racun.builder("12345678903", LocalDateTime.now(ZoneId.of("Europe/Zag
         .pdv(List.of(new Porez(new BigDecimal("25.00"), new BigDecimal("10.00"), new BigDecimal("2.50"))))
         .build();
 
-B2cRezultat r = client.racun(racun);
+Rezultat r = client.racun(racun);
 String qr = QrKod.poveznica(r, racun);   // s JIR-om, ili sa ZKI-jem ako JIR-a nema
 ```
 
@@ -183,8 +183,10 @@ Ove odluke treba potvrditi na testnom okruženju:
 | `fiskalizacija-eracun` | validacija eRačuna prema UBL XSD-u, EN 16931 i HR CIUS pravilima (koristi phax ph-ubl i phive-rules); u izradi, još se ne objavljuje |
 | `fiskalizacija-examples` | pokretljivi primjeri; ne objavljuje se |
 
-`fiskalizacija-core` je JPMS modul `dev.mmatokovic.fiskalizacija`. Javni API su paketi `dev.mmatokovic.fiskalizacija`,
-`dev.mmatokovic.fiskalizacija.model` i `dev.mmatokovic.fiskalizacija.b2c`; paket `dev.mmatokovic.fiskalizacija.internal` modul ne izvozi i mijenja se bez najave.
+`fiskalizacija-core` je JPMS modul `dev.mmatokovic.fiskalizacija`. Javni API su tri paketa:
+`dev.mmatokovic.fiskalizacija` (zajedničko: `Potpisivac`, `Okruzenje`, `FinaCertifikati`, `Oib`, iznimke),
+`dev.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0: `B2bClient`, `UblParser` i podaci poruka) i
+`dev.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0: `B2cClient`, `Zki`, `QrKod` i podaci poruka); paket `dev.mmatokovic.fiskalizacija.internal` modul ne izvozi i mijenja se bez najave.
 Do verzije 1.0.0 javni API se može mijenjati između minor verzija (vidi [CHANGELOG.md](CHANGELOG.md)).
 
 ## Build
@@ -201,7 +203,7 @@ Izvještaj o pokrivenosti testovima je u `fiskalizacija-core/target/site/jacoco/
 
 ## Testno okruženje
 
-`PoreznaTestnoOkruzenjeIT` šalje stvarne poruke na testno okruženje Porezne uprave: izlazni eRačun pa naplatu,
+`B2bTestnoOkruzenjeIT` šalje stvarne poruke na testno okruženje Porezne uprave: izlazni eRačun pa naplatu,
 ulazni eRačun pa odbijanje, i isporuku bez eRačuna. Treba demo aplikacijski certifikat (FINA Demo CA) i OIB na
 koji je izdan; bez njih se testovi preskaču.
 
@@ -209,11 +211,11 @@ koji je izdan; bez njih se testovi preskaču.
 još `FISK_OZN_POS_PR`, poslovni prostor otvoren na OIB certifikata u testnom okruženju.
 
 ```bash
-FISK_P12=/putanja/demo.p12 FISK_P12_LOZINKA=... FISK_OIB=... ./mvnw verify -Dit.test=PoreznaTestnoOkruzenjeIT
+FISK_P12=/putanja/demo.p12 FISK_P12_LOZINKA=... FISK_OIB=... ./mvnw verify -Dit.test=B2bTestnoOkruzenjeIT
 ```
 
 ```powershell
-$env:FISK_P12='C:\putanja\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB='...'; .\mvnw.cmd verify "-Dit.test=PoreznaTestnoOkruzenjeIT"
+$env:FISK_P12='C:\putanja\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB='...'; .\mvnw.cmd verify "-Dit.test=B2bTestnoOkruzenjeIT"
 ```
 
 ## Primjeri

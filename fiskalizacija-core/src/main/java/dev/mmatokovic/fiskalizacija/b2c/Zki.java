@@ -1,7 +1,7 @@
 package dev.mmatokovic.fiskalizacija.b2c;
 
 import dev.mmatokovic.fiskalizacija.Potpisivac;
-import dev.mmatokovic.fiskalizacija.internal.PristupKljucu;
+import dev.mmatokovic.fiskalizacija.internal.potpis.PristupKljucu;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

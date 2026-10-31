@@ -1,5 +1,7 @@
 package dev.mmatokovic.fiskalizacija;
 
+import dev.mmatokovic.fiskalizacija.b2b.UblException;
+import dev.mmatokovic.fiskalizacija.b2b.UblParser;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;

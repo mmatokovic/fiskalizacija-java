@@ -1,8 +1,8 @@
 package dev.mmatokovic.fiskalizacija.primjeri;
 
-import dev.mmatokovic.fiskalizacija.UblParser;
+import dev.mmatokovic.fiskalizacija.b2b.UblParser;
+import dev.mmatokovic.fiskalizacija.b2b.VrstaERacuna;
 import dev.mmatokovic.fiskalizacija.eracun.ERacunValidator;
-import dev.mmatokovic.fiskalizacija.model.VrstaERacuna;
 
 /** Validira izlazni eRačun i fiskalizira ga na testnom okruženju. */
 public final class EvidentiranjeERacuna {

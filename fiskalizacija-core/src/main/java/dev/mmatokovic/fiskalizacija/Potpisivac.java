@@ -1,6 +1,6 @@
 package dev.mmatokovic.fiskalizacija;
 
-import dev.mmatokovic.fiskalizacija.internal.PristupKljucu;
+import dev.mmatokovic.fiskalizacija.internal.potpis.PristupKljucu;
 import org.w3c.dom.Element;
 
 import javax.xml.crypto.dom.DOMStructure;

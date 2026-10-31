@@ -1,9 +1,9 @@
 package dev.mmatokovic.fiskalizacija.primjeri;
 
-import dev.mmatokovic.fiskalizacija.UblParser;
-import dev.mmatokovic.fiskalizacija.model.NacinPlacanja;
-import dev.mmatokovic.fiskalizacija.model.Naplata;
-import dev.mmatokovic.fiskalizacija.model.VrstaERacuna;
+import dev.mmatokovic.fiskalizacija.b2b.NacinPlacanja;
+import dev.mmatokovic.fiskalizacija.b2b.Naplata;
+import dev.mmatokovic.fiskalizacija.b2b.UblParser;
+import dev.mmatokovic.fiskalizacija.b2b.VrstaERacuna;
 
 import java.time.LocalDate;
 import java.time.ZoneId;

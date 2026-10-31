@@ -1,7 +1,7 @@
 package dev.mmatokovic.fiskalizacija.b2c;
 
 import dev.mmatokovic.fiskalizacija.Primjeri;
-import dev.mmatokovic.fiskalizacija.internal.PristupKljucu;
+import dev.mmatokovic.fiskalizacija.internal.potpis.PristupKljucu;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

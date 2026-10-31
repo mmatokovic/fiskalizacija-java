@@ -42,7 +42,7 @@ For JPMS projects: `requires dev.mmatokovic.fiskalizacija;`
 
 ```java
 var potpisivac = Potpisivac.izP12(Path.of("application-certificate.p12"), password);
-var client = FiskalizacijaClient.builder(Okruzenje.TEST, potpisivac).build();
+var client = B2bClient.builder(Okruzenje.TEST, potpisivac).build();
 
 Racun racun = UblParser.racun(Files.readAllBytes(Path.of("eracun.xml")));
 Rezultat r = client.evidentirajERacun(VrstaERacuna.IZLAZNI, racun);
@@ -133,7 +133,7 @@ var racun = Racun.builder("12345678903", LocalDateTime.now(ZoneId.of("Europe/Zag
         .pdv(List.of(new Porez(new BigDecimal("25.00"), new BigDecimal("10.00"), new BigDecimal("2.50"))))
         .build();
 
-B2cRezultat r = client.racun(racun);
+Rezultat r = client.racun(racun);
 String qr = QrKod.poveznica(r, racun);   // with the JIR, or with the ZKI if there is no JIR
 ```
 
@@ -188,8 +188,10 @@ These choices need confirming on the test environment:
 | `fiskalizacija-eracun` | eRačun validation against UBL XSD, EN 16931 and HR CIUS rules (uses phax ph-ubl and phive-rules); in progress, not published yet |
 | `fiskalizacija-examples` | runnable examples; not published |
 
-`fiskalizacija-core` is the JPMS module `dev.mmatokovic.fiskalizacija`. The public API is the
-`dev.mmatokovic.fiskalizacija`, `dev.mmatokovic.fiskalizacija.model` and `dev.mmatokovic.fiskalizacija.b2c` packages; the module does not export
+`fiskalizacija-core` is the JPMS module `dev.mmatokovic.fiskalizacija`. The public API is three packages:
+`dev.mmatokovic.fiskalizacija` (shared: `Potpisivac`, `Okruzenje`, `FinaCertifikati`, `Oib`, exceptions),
+`dev.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0: `B2bClient`, `UblParser` and the message data) and
+`dev.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0: `B2cClient`, `Zki`, `QrKod` and the message data). The module does not export
 `dev.mmatokovic.fiskalizacija.internal`, which may change without notice. Before 1.0.0 the public API may change
 between minor versions (see [CHANGELOG.md](CHANGELOG.md)).
 
@@ -207,7 +209,7 @@ The test coverage report is in `fiskalizacija-core/target/site/jacoco/index.html
 
 ## Test environment
 
-`PoreznaTestnoOkruzenjeIT` sends real messages to the Porezna uprava test environment: an issued eRačun followed by
+`B2bTestnoOkruzenjeIT` sends real messages to the Porezna uprava test environment: an issued eRačun followed by
 a payment, a received eRačun followed by a rejection, and a supply without an eRačun. It needs a demo application
 certificate (FINA Demo CA) and the OIB it was issued to; without them the tests are skipped.
 
@@ -215,11 +217,11 @@ certificate (FINA Demo CA) and the OIB it was issued to; without them the tests 
 hours also need `FISK_OZN_POS_PR`, a business premises opened for the certificate's OIB on the test environment.
 
 ```bash
-FISK_P12=/path/demo.p12 FISK_P12_LOZINKA=... FISK_OIB=... ./mvnw verify -Dit.test=PoreznaTestnoOkruzenjeIT
+FISK_P12=/path/demo.p12 FISK_P12_LOZINKA=... FISK_OIB=... ./mvnw verify -Dit.test=B2bTestnoOkruzenjeIT
 ```
 
 ```powershell
-$env:FISK_P12='C:\path\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB='...'; .\mvnw.cmd verify "-Dit.test=PoreznaTestnoOkruzenjeIT"
+$env:FISK_P12='C:\path\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB='...'; .\mvnw.cmd verify "-Dit.test=B2bTestnoOkruzenjeIT"
 ```
 
 ## Examples

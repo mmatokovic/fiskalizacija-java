@@ -27,8 +27,8 @@ public final class QrKod {
         return poveznica("zki", zastKod, datVrijeme, iznosUkupno);
     }
 
-    /** Za {@link B2cRezultat}: s JIR-om ako ga ima, inače sa ZKI-jem. */
-    public static String poveznica(B2cRezultat rezultat, Racun racun) {
+    /** Za {@link Rezultat}: s JIR-om ako ga ima, inače sa ZKI-jem. */
+    public static String poveznica(Rezultat rezultat, Racun racun) {
         return rezultat.jir() != null
                 ? poveznica(rezultat.jir(), racun.datVrijeme(), racun.iznosUkupno())
                 : poveznicaZki(rezultat.zastKod(), racun.datVrijeme(), racun.iznosUkupno());

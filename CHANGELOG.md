@@ -10,13 +10,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   `EvidentirajIsporukuZaKojuNijeIzdanERacun`.
 - Reading UBL 2.1 eRačun (HR CIUS), XAdES-B request signing, response signature check up to the FINA CA,
   XSD validation before sending.
-- JPMS module `dev.mmatokovic.fiskalizacija`; the `dev.mmatokovic.fiskalizacija.internal` package is not exported.
+- JPMS module `dev.mmatokovic.fiskalizacija` with the shared classes in `dev.mmatokovic.fiskalizacija`, Fiskalizacija 2.0
+  in `dev.mmatokovic.fiskalizacija.b2b` (`B2bClient`) and 1.0 in `dev.mmatokovic.fiskalizacija.b2c` (`B2cClient`); the
+  `dev.mmatokovic.fiskalizacija.internal` packages are not exported.
 - `Oib.ispravan` checks an OIB's check digit (ISO 7064, MOD 11,10). `UblParser` reports an invalid OIB of the seller,
   buyer or operator as an error.
-- Integration tests against the Porezna uprava test environment (`PoreznaTestnoOkruzenjeIT`), skipped unless a demo
+- Integration tests against the Porezna uprava test environment (`B2bTestnoOkruzenjeIT`), skipped unless a demo
   certificate and OIB are provided.
 - JaCoCo test coverage report.
-- `FiskalizacijaClient.provjeriOdgovor` checks the signature of an archived response, with the certificate chain
+- `B2bClient.provjeriOdgovor` checks the signature of an archived response, with the certificate chain
   validated as of the time the response was received (`Rezultat.primljeno()`).
 - `pripremi*` methods return a signed, validated `PripremljeniZahtjev` without sending it; `posalji` sends it and
   `obradiOdgovor` processes a response received through your own HTTP client.
