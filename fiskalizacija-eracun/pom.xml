@@ -11,17 +11,13 @@
     </parent>
 
     <artifactId>fiskalizacija-eracun</artifactId>
-    <description>UBL 2.1 eRačun po HR CIUS-u: izrada, validacija i ApplicationResponse</description>
+    <description>UBL 2.1 eRačun po HR CIUS-u: validacija i izračun iznosa</description>
 
     <dependencies>
         <dependency>
             <groupId>dev.mmatokovic.fiskalizacija</groupId>
             <artifactId>fiskalizacija-core</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.helger.ubl</groupId>
-            <artifactId>ph-ubl21</artifactId>
         </dependency>
         <dependency>
             <groupId>com.helger.phive.rules</groupId>

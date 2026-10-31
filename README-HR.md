@@ -183,12 +183,17 @@ FINA upisuje: u organizationIdentifier (`HR02994650199` u `fiskalcistest`) ili u
 - `OvlastenjaFiskalizacije` (dohvat ovlaštenja)
 - Objava na Maven Central
 
+## Zasad izvan opsega
+
+Izrada UBL eRačuna i kupčevog ApplicationResponsea. Biblioteka čita i validira eRačun koji već imate, npr. iz ERP-a
+ili od informacijskog posrednika. Možda dođe kasnije.
+
 ## Moduli i API
 
 | Artefakt | Sadržaj |
 |---|---|
 | `fiskalizacija-core` | poruke Fiskalizacije 2.0 i 1.0, čitanje UBL-a, potpis; samo JDK |
-| `fiskalizacija-eracun` | validacija eRačuna prema UBL XSD-u, EN 16931 i HR CIUS pravilima (koristi phax ph-ubl i phive-rules); u izradi, još se ne objavljuje |
+| `fiskalizacija-eracun` | validacija eRačuna prema UBL XSD-u, EN 16931 i HR CIUS pravilima (koristi phax phive-rules) i izračun iznosa računa po EN 16931; još se ne objavljuje |
 | `fiskalizacija-examples` | pokretljivi primjeri; ne objavljuje se |
 
 `fiskalizacija-core` je JPMS modul `dev.mmatokovic.fiskalizacija`. Javni API su tri paketa:

@@ -188,12 +188,17 @@ Porezna's TLS certificate), never elsewhere in the subject, part of which the ce
 - `OvlastenjaFiskalizacije` (fetching authorisations)
 - Publishing to Maven Central
 
+## Out of scope for now
+
+Creating a UBL eRačun and the buyer's ApplicationResponse. The library reads and validates an eRačun you already
+have, e.g. from your ERP or information intermediary. This may come later.
+
 ## Modules and API
 
 | Artifact | Contents |
 |---|---|
 | `fiskalizacija-core` | Fiskalizacija 2.0 and 1.0 messages, UBL parsing, signing; JDK only |
-| `fiskalizacija-eracun` | eRačun validation against UBL XSD, EN 16931 and HR CIUS rules (uses phax ph-ubl and phive-rules); in progress, not published yet |
+| `fiskalizacija-eracun` | eRačun validation against UBL XSD, EN 16931 and HR CIUS rules (uses phax phive-rules), and invoice totals by EN 16931; not published yet |
 | `fiskalizacija-examples` | runnable examples; not published |
 
 `fiskalizacija-core` is the JPMS module `dev.mmatokovic.fiskalizacija`. The public API is three packages:
