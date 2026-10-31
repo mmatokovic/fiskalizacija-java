@@ -32,8 +32,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   `obrisiRadnoVrijeme`, `dohvatiRadnoVrijeme`, `prijaviRadnoVrijemeZaPoslovnice`) and supports `provjera` and `echo`.
   Requests are signed with RSA-SHA256 and validated against the f73 schema; responses must be signed by
   `fiskalcis`/`fiskalcistest`. `Zki` computes the ZKI and `QrKod` the link for the QR code on the invoice.
-- The default response signer check reads the OIB from the certificate's organizationIdentifier, which it previously
-  saw only hex-encoded.
+- The default response signer check accepts the OIB only in the subject's organizationIdentifier or serialNumber,
+  where FINA puts it, and no longer anywhere in the subject text.
+- XAdES signing is no longer public API (`Potpisivac.potpisi` removed); its signing time follows the client's `sat`.
+- `Zki.izracunaj` throws `NeispravanZahtjevException` for an amount with more than two decimals, as the clients do.
 - `datumVrijemeSlanja` is always written in Europe/Zagreb time. A SOAP Fault's `faultstring` is part of the
   `FiskalizacijaException` message. `Rezultat.toString()` leaves out the raw SOAP messages.
 - Only KPD (`CG`) item classifications are read from UBL, VAT total BT-110 is taken from the tax total in the document

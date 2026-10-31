@@ -2,7 +2,12 @@ package dev.mmatokovic.fiskalizacija.internal.http;
 
 import dev.mmatokovic.fiskalizacija.FiskalizacijaException;
 import dev.mmatokovic.fiskalizacija.b2b.Odgovor;
+import dev.mmatokovic.fiskalizacija.internal.xml.Xml;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -11,7 +16,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
-/** HTTP POST SOAP poruke s ograničenom veličinom odgovora. */
+/** SOAP omotnica i HTTP POST s ograničenom veličinom odgovora. */
 public final class SoapPoziv {
 
     public static final String NS_SOAP = "http://schemas.xmlsoap.org/soap/envelope/";
@@ -22,6 +27,22 @@ public final class SoapPoziv {
     }
 
     public record Odgovor(int status, String tijelo) {
+    }
+
+    /** Nova SOAP omotnica; vraća njezin prazni {@code Body}. */
+    public static Element novoTijelo() {
+        Document doc;
+        try {
+            var dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            doc = dbf.newDocumentBuilder().newDocument();
+        } catch (ParserConfigurationException e) {
+            throw new IllegalStateException(e);
+        }
+        var envelope = doc.createElementNS(NS_SOAP, "soapenv:Envelope");
+        envelope.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:soapenv", NS_SOAP);
+        doc.appendChild(envelope);
+        return Xml.dodaj(envelope, NS_SOAP, "soapenv:Body");
     }
 
     /** @throws FiskalizacijaException ako slanje ne uspije ili je odgovor prevelik */

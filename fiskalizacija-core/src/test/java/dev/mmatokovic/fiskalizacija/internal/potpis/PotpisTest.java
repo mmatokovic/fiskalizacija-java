@@ -27,6 +27,7 @@ import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.cert.TrustAnchor;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Base64;
 import java.util.List;
@@ -94,7 +95,7 @@ class PotpisTest {
                 + "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev><eizv:Unutarnji eizv:id=\"u\">x</eizv:Unutarnji></eizv:Vanjski>");
         var vanjski = doc.getDocumentElement();
         var unutarnji = (Element) doc.getElementsByTagNameNS(ns, "Unutarnji").item(0);
-        potpisivac.potpisi(unutarnji, "u");
+        Xades.potpisi(unutarnji, "u", potpisivac, Clock.systemUTC());
         vanjski.appendChild(unutarnji.getLastChild());
 
         assertEquals(PotpisOdgovora.NEISPRAVAN, ProvjeraPotpisa.provjeri(vanjski, Primjeri.sidra(potpisivac), List.of()));
@@ -108,7 +109,7 @@ class PotpisTest {
                 + "<eizv:EvidentirajNaplatuOdgovor xmlns:eizv=\"" + ns + "\" eizv:id=\"I\"><eizv:Odgovor>"
                 + "<eizv:prihvacenZahtjev>false</eizv:prihvacenZahtjev></eizv:Odgovor></eizv:EvidentirajNaplatuOdgovor>"
                 + "</soapenv:Body></soapenv:Envelope>");
-        potpisivac.potpisi((Element) doc.getElementsByTagNameNS(ns, "EvidentirajNaplatuOdgovor").item(0), "I");
+        Xades.potpisi((Element) doc.getElementsByTagNameNS(ns, "EvidentirajNaplatuOdgovor").item(0), "I", potpisivac, Clock.systemUTC());
         doc = Xml.parsiraj(Xml.serijaliziraj(doc));
         var original = (Element) doc.getElementsByTagNameNS(ns, "EvidentirajNaplatuOdgovor").item(0);
         var tijelo = (Element) original.getParentNode();
@@ -196,7 +197,7 @@ class PotpisTest {
     private Document potpisanIPrenesen() throws Exception {
         var z = Zahtjevi.evidentirajNaplatu(List.of(new Naplata("1-P1-1", LocalDate.of(2026, 3, 1), "12345678901", "11111111119",
                 LocalDate.of(2026, 3, 2), new BigDecimal("125.00"), NacinPlacanja.T)), Primjeri.SAT);
-        potpisivac.potpisi(z.element(), z.id());
+        Xades.potpisi(z.element(), z.id(), potpisivac, Clock.systemUTC());
         return Xml.parsiraj(Xml.serijaliziraj(z.dokument()));
     }
 

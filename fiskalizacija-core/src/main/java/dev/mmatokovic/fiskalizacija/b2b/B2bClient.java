@@ -10,6 +10,7 @@ import dev.mmatokovic.fiskalizacija.internal.b2b.Zahtjevi;
 import dev.mmatokovic.fiskalizacija.internal.http.Postavke;
 import dev.mmatokovic.fiskalizacija.internal.http.SoapPoziv;
 import dev.mmatokovic.fiskalizacija.internal.potpis.Subjekt;
+import dev.mmatokovic.fiskalizacija.internal.potpis.Xades;
 import dev.mmatokovic.fiskalizacija.internal.xml.Xml;
 import dev.mmatokovic.fiskalizacija.internal.xml.Xsd;
 import org.w3c.dom.Document;
@@ -24,7 +25,6 @@ import java.security.cert.X509Certificate;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -180,7 +180,7 @@ public final class B2bClient {
     }
 
     private PripremljeniZahtjev pripremi(Zahtjevi.Zahtjev zahtjev, String odgovorElement) {
-        potpisivac.potpisi(zahtjev.element(), zahtjev.id());
+        Xades.potpisi(zahtjev.element(), zahtjev.id(), potpisivac, postavke.sat());
         if (postavke.xsdValidacija()) {
             var greske = Xsd.greske(zahtjev.element());
             if (!greske.isEmpty()) {

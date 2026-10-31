@@ -1,10 +1,11 @@
 package dev.mmatokovic.fiskalizacija.b2c;
 
+import dev.mmatokovic.fiskalizacija.NeispravanZahtjevException;
 import dev.mmatokovic.fiskalizacija.Potpisivac;
 import dev.mmatokovic.fiskalizacija.internal.potpis.PristupKljucu;
+import dev.mmatokovic.fiskalizacija.internal.xml.Xml;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
@@ -26,8 +27,8 @@ public final class Zki {
     }
 
     /**
-     * @throws IllegalArgumentException ako iznos ima više od dvije decimale
-     * @throws IllegalStateException    ako potpisivanje ne uspije, npr. ključ koji nije RSA
+     * @throws NeispravanZahtjevException ako iznos ima više od dvije decimale
+     * @throws IllegalStateException       ako potpisivanje ne uspije, npr. ključ koji nije RSA
      */
     public static String izracunaj(Potpisivac potpisivac, Racun racun) {
         return izracunaj(potpisivac, racun.oib(), racun.datVrijeme(), racun.brRac(), racun.iznosUkupno());
@@ -37,7 +38,7 @@ public final class Zki {
     public static String izracunaj(Potpisivac potpisivac, String oib, LocalDateTime datVrijeme, BrojRacuna brRac,
             BigDecimal iznosUkupno) {
         String podaci = oib + datVrijeme.format(DATUM_VRIJEME) + brRac.brOznRac() + brRac.oznPosPr() + brRac.oznNapUr()
-                + iznos(iznosUkupno);
+                + Xml.iznos(iznosUkupno).toPlainString();
         try {
             var potpis = Signature.getInstance("SHA256withRSA");
             potpis.initSign(PristupKljucu.kljuc(potpisivac));
@@ -45,14 +46,6 @@ public final class Zki {
             return HexFormat.of().formatHex(MessageDigest.getInstance("MD5").digest(potpis.sign()));
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("Izračun ZKI-ja nije uspio: " + e.getMessage(), e);
-        }
-    }
-
-    private static String iznos(BigDecimal iznos) {
-        try {
-            return iznos.setScale(2, RoundingMode.UNNECESSARY).toPlainString();
-        } catch (ArithmeticException e) {
-            throw new IllegalArgumentException("Iznos smije imati najviše dvije decimale: " + iznos.toPlainString(), e);
         }
     }
 }

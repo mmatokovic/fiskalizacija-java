@@ -19,8 +19,6 @@ import dev.mmatokovic.fiskalizacija.internal.xml.Xml;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -220,18 +218,8 @@ public final class Zahtjevi {
     }
 
     private static Zahtjev novi(String ns, String prefiks, String ime) {
-        Document doc;
-        try {
-            var dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            doc = dbf.newDocumentBuilder().newDocument();
-        } catch (ParserConfigurationException e) {
-            throw new IllegalStateException(e);
-        }
-        var envelope = doc.createElementNS(SoapPoziv.NS_SOAP, "soapenv:Envelope");
-        envelope.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:soapenv", SoapPoziv.NS_SOAP);
-        doc.appendChild(envelope);
-        var body = Xml.dodaj(envelope, SoapPoziv.NS_SOAP, "soapenv:Body");
+        var body = SoapPoziv.novoTijelo();
+        var doc = body.getOwnerDocument();
         var zahtjev = Xml.dodaj(body, ns, prefiks + ":" + ime);
         zahtjev.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:" + prefiks, ns);
         String id = UUID.randomUUID().toString();

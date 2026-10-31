@@ -1,5 +1,6 @@
 package dev.mmatokovic.fiskalizacija.internal.potpis;
 
+import dev.mmatokovic.fiskalizacija.Potpisivac;
 import org.w3c.dom.Element;
 
 import javax.xml.crypto.MarshalException;
@@ -13,8 +14,6 @@ import javax.xml.crypto.dsig.dom.DOMSignContext;
 import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
 import javax.xml.crypto.dsig.spec.TransformParameterSpec;
 import java.security.GeneralSecurityException;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
 import java.util.List;
 
 /**
@@ -27,7 +26,8 @@ public final class XmlDsig {
     }
 
     /** Dodaje {@code Signature} kao zadnje dijete elementa {@code zahtjev}, čiji atribut {@code Id} ima vrijednost {@code id}. */
-    public static void potpisi(Element zahtjev, String id, PrivateKey kljuc, X509Certificate certifikat) {
+    public static void potpisi(Element zahtjev, String id, Potpisivac potpisivac) {
+        var certifikat = potpisivac.certifikat();
         try {
             var fac = XMLSignatureFactory.getInstance("DOM");
             var excC14n = fac.newTransform(CanonicalizationMethod.EXCLUSIVE, (TransformParameterSpec) null);
@@ -41,7 +41,7 @@ public final class XmlDsig {
             var izdavatelj = kif.newX509IssuerSerial(certifikat.getIssuerX500Principal().getName(), certifikat.getSerialNumber());
             var keyInfo = kif.newKeyInfo(List.of(kif.newX509Data(List.of(certifikat, izdavatelj))));
 
-            var ctx = new DOMSignContext(kljuc, zahtjev);
+            var ctx = new DOMSignContext(PristupKljucu.kljuc(potpisivac), zahtjev);
             ctx.setIdAttributeNS(zahtjev, null, "Id");
             fac.newXMLSignature(signedInfo, keyInfo).sign(ctx);
         } catch (GeneralSecurityException | MarshalException | XMLSignatureException e) {

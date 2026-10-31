@@ -17,8 +17,6 @@ import dev.mmatokovic.fiskalizacija.internal.xml.Xml;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -129,8 +127,8 @@ public final class B2cZahtjevi {
     }
 
     public static Document echo(String poruka) {
-        var doc = omotnica();
-        var body = (Element) doc.getDocumentElement().getFirstChild();
+        var body = SoapPoziv.novoTijelo();
+        var doc = body.getOwnerDocument();
         var echo = Xml.dodaj(body, NS_F73, "tns:EchoRequest");
         echo.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:tns", NS_F73);
         echo.setTextContent(poruka);
@@ -251,8 +249,8 @@ public final class B2cZahtjevi {
     }
 
     private static Zahtjev novi(String ime, Clock sat) {
-        var doc = omotnica();
-        var body = (Element) doc.getDocumentElement().getFirstChild();
+        var body = SoapPoziv.novoTijelo();
+        var doc = body.getOwnerDocument();
         var zahtjev = Xml.dodaj(body, NS_F73, "tns:" + ime);
         zahtjev.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:tns", NS_F73);
         zahtjev.setAttribute("Id", ime);
@@ -263,21 +261,6 @@ public final class B2cZahtjevi {
         return new Zahtjev(doc, zahtjev, ime, idPoruke);
     }
 
-    private static Document omotnica() {
-        Document doc;
-        try {
-            var dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            doc = dbf.newDocumentBuilder().newDocument();
-        } catch (ParserConfigurationException e) {
-            throw new IllegalStateException(e);
-        }
-        var envelope = doc.createElementNS(SoapPoziv.NS_SOAP, "soapenv:Envelope");
-        envelope.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:soapenv", SoapPoziv.NS_SOAP);
-        doc.appendChild(envelope);
-        Xml.dodaj(envelope, SoapPoziv.NS_SOAP, "soapenv:Body");
-        return doc;
-    }
 
     private static void tekst(Element roditelj, String ime, Object vrijednost) {
         if (vrijednost == null) {

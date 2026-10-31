@@ -8,6 +8,7 @@ import dev.mmatokovic.fiskalizacija.Potpisivac;
 import dev.mmatokovic.fiskalizacija.Primjeri;
 import dev.mmatokovic.fiskalizacija.internal.b2b.Zahtjevi;
 import dev.mmatokovic.fiskalizacija.internal.potpis.ProvjeraPotpisa;
+import dev.mmatokovic.fiskalizacija.internal.potpis.Xades;
 import dev.mmatokovic.fiskalizacija.internal.xml.Xml;
 import dev.mmatokovic.fiskalizacija.internal.xml.Xsd;
 import mockwebserver3.Dispatcher;
@@ -30,6 +31,7 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -474,7 +476,7 @@ class B2bClientTest {
         try {
             var doc = Xml.parsiraj(xml);
             var el = (org.w3c.dom.Element) doc.getElementsByTagNameNS(Zahtjevi.NS_EIZV, element).item(0);
-            potpisivacOdgovora.potpisi(el, el.getAttributeNS(Zahtjevi.NS_EIZV, "id"));
+            Xades.potpisi(el, el.getAttributeNS(Zahtjevi.NS_EIZV, "id"), potpisivacOdgovora, Clock.systemUTC());
             return Xml.serijaliziraj(doc);
         } catch (Exception e) {
             throw new IllegalStateException(e);

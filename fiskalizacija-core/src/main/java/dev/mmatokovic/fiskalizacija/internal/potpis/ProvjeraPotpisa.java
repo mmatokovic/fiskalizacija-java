@@ -28,6 +28,7 @@ import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,6 +52,7 @@ public final class ProvjeraPotpisa {
     private static final String NS_DS = "http://www.w3.org/2000/09/xmldsig#";
     private static final String XADES_SIGNED_PROPERTIES = "http://uri.etsi.org/01903#SignedProperties";
     private static final int MIN_RSA_BITOVA = 2048;
+    private static final int MIN_EC_BITOVA = 256;
     private static final int MAKS_REFERENCI = 5;
     private static final int MAKS_TRANSFORMACIJA = 4;
 
@@ -131,7 +133,9 @@ public final class ProvjeraPotpisa {
         } catch (Exception e) {
             return PotpisOdgovora.NEISPRAVAN;
         }
-        if (certifikat[0].getPublicKey() instanceof RSAPublicKey rsa && rsa.getModulus().bitLength() < MIN_RSA_BITOVA) {
+        var kljuc = certifikat[0].getPublicKey();
+        if (kljuc instanceof RSAPublicKey rsa && rsa.getModulus().bitLength() < MIN_RSA_BITOVA
+                || kljuc instanceof ECPublicKey ec && ec.getParams().getOrder().bitLength() < MIN_EC_BITOVA) {
             return PotpisOdgovora.NEISPRAVAN;
         }
 

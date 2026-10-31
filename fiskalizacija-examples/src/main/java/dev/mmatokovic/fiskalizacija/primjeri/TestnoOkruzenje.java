@@ -75,7 +75,8 @@ final class TestnoOkruzenje {
         } else if (r.prihvacenBezProvjerePotpisa()) {
             System.out.println(poruka + ": prihvaćeno, ali potpis odgovora je " + r.potpisOdgovora());
         } else {
-            System.out.println(poruka + ": odbijeno, " + r.greska().sifra() + " " + r.greska().opis());
+            var g = r.greska();
+            System.out.println(poruka + ": odbijeno, " + (g == null ? "bez opisa greške" : g.sifra() + " " + g.opis()));
         }
     }
 

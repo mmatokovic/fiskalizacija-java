@@ -9,6 +9,7 @@ import dev.mmatokovic.fiskalizacija.b2b.Odbijanje;
 import dev.mmatokovic.fiskalizacija.b2b.UblParser;
 import dev.mmatokovic.fiskalizacija.b2b.VrstaERacuna;
 import dev.mmatokovic.fiskalizacija.b2b.VrstaRazlogaOdbijanja;
+import dev.mmatokovic.fiskalizacija.internal.potpis.Xades;
 import dev.mmatokovic.fiskalizacija.internal.xml.Xsd;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Element;
@@ -37,7 +38,7 @@ class ZahtjeviTest {
         var neuspjeli = new ArrayList<String>();
         for (var p : Primjeri.eRacuni()) {
             var z = Zahtjevi.evidentirajERacun(VrstaERacuna.IZLAZNI, List.of(UblParser.racun(Primjeri.eRacun(p))), Primjeri.SAT);
-            potpisivac.potpisi(z.element(), z.id());
+            Xades.potpisi(z.element(), z.id(), potpisivac, Clock.systemUTC());
             var greske = Xsd.greske(z.element());
             if (!greske.isEmpty()) {
                 neuspjeli.add(p.getFileName() + ": " + greske);
@@ -52,7 +53,7 @@ class ZahtjeviTest {
     void isporukaBezERacunaKoristiImenaElemenataIzEIzvjestavanja() {
         var racun = UblParser.racun(Primjeri.eRacun("Finalni_racun_predujam.xml"));
         var z = Zahtjevi.evidentirajIsporukuZaKojuNijeIzdanERacun(List.of(racun), Primjeri.SAT);
-        potpisivac.potpisi(z.element(), z.id());
+        Xades.potpisi(z.element(), z.id(), potpisivac, Clock.systemUTC());
 
         assertEquals(List.of(), Xsd.greske(z.element()));
         assertEquals("IR", tekst(z.element(), "vrstaRacuna"));
@@ -65,7 +66,7 @@ class ZahtjeviTest {
     void naplataOdgovaraSluzbenomPrimjeruIProlaziShemu() {
         var z = Zahtjevi.evidentirajNaplatu(List.of(new Naplata("TEST", LocalDate.of(2026, 8, 8), "12345678901", "11111111119",
                 LocalDate.of(2026, 8, 10), new BigDecimal("1000"), NacinPlacanja.T)), Primjeri.SAT);
-        potpisivac.potpisi(z.element(), z.id());
+        Xades.potpisi(z.element(), z.id(), potpisivac, Clock.systemUTC());
 
         assertEquals(List.of(), Xsd.greske(z.element()));
         assertEquals("1000.00", tekst(z.element(), "naplaceniIznos"));
@@ -78,7 +79,7 @@ class ZahtjeviTest {
     void odbijanjeOdgovaraSluzbenomPrimjeruIProlaziShemu() {
         var z = Zahtjevi.evidentirajOdbijanje(List.of(new Odbijanje("TEST", LocalDate.of(2026, 8, 8), "12345678901",
                 "11111111119", LocalDate.of(2026, 8, 10), VrstaRazlogaOdbijanja.N, "Neispravan iznos na računu")), Primjeri.SAT);
-        potpisivac.potpisi(z.element(), z.id());
+        Xades.potpisi(z.element(), z.id(), potpisivac, Clock.systemUTC());
 
         assertEquals(List.of(), Xsd.greske(z.element()));
         assertEquals(List.of("brojDokumenta", "datumIzdavanja", "oibPorezniBrojIzdavatelja", "oibPorezniBrojPrimatelja",
@@ -131,7 +132,7 @@ class ZahtjeviTest {
     void shemaOdbijaNeispravanOib() {
         var z = Zahtjevi.evidentirajNaplatu(List.of(new Naplata("TEST", LocalDate.of(2026, 8, 8), "1234567890", "11111111119",
                 LocalDate.of(2026, 8, 10), BigDecimal.TEN, NacinPlacanja.T)), Primjeri.SAT);
-        potpisivac.potpisi(z.element(), z.id());
+        Xades.potpisi(z.element(), z.id(), potpisivac, Clock.systemUTC());
 
         var greske = Xsd.greske(z.element());
 

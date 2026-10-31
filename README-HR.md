@@ -160,14 +160,17 @@ Ove odluke treba potvrditi na testnom okruženju:
 3. `Content-Type: application/xml; charset=utf-8` umjesto uobičajenog `text/xml` za SOAP 1.1.
 4. Objavljeni primjeri odgovora potpisani su RSA-SHA1, a JDK-ov `secureValidation` SHA-1 odbija i ne može se
    dopustiti samo za jedan kontekst. Zato je isključen, a njegova bitna pravila provjeravaju se eksplicitno: samo
-   reference unutar dokumenta, popis dopuštenih algoritama i transformacija, RSA ključ od najmanje 2048 bita.
+   reference unutar dokumenta, popis dopuštenih algoritama i transformacija, RSA ključ od najmanje 2048 bita i EC ključ od najmanje 256.
 5. Svaki porezni obveznik ima FINA certifikat, pa ispravan lanac nije dovoljan. Zadano subjekt potpisnika odgovora
-   mora sadržavati OIB Ministarstva financija (`18683136487`), kakav ima i Poreznin TLS certifikat. Ako Porezna
-   odgovore potpisuje drugim certifikatom, postavite vlastitu provjeru s `Builder.potpisnikOdgovora(...)`.
+   mora imati OIB Ministarstva financija (`18683136487`), kao Poreznin TLS certifikat. Ako Porezna odgovore
+   potpisuje drugim certifikatom, postavite vlastitu provjeru s `Builder.potpisnikOdgovora(...)`.
 6. B2C odgovori: zadano potpisnik mora biti `CN=fiskalcis` (u testu `fiskalcistest`, kao u poglavlju 5
-   specifikacije) s OIB-om APIS IT-a (`02994650199`) u subjektu. OIB se čita iz atributa organizationIdentifier,
-   kao u službenom certifikatu `fiskalcistest`.
+   specifikacije) s OIB-om APIS IT-a (`02994650199`).
 7. B2C `prijaviRadnoVrijeme` šalje se sa SOAPAction od `promijeniPodatkeRacuna`, kao u službenom WSDL-u v1.10.
+
+OIB se priznaje samo tamo gdje ga FINA upisuje: u organizationIdentifier (`HR02994650199` u `fiskalcistest`) ili u
+serialNumber (`VATHR-18683136487.341` u Poreznom certifikatu), nikad drugdje u subjektu, koji vlasnik certifikata
+dijelom bira sam.
 
 ## Što još nije napravljeno
 

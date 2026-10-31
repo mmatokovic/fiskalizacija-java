@@ -17,7 +17,11 @@ public final class PristupKljucu {
     private PristupKljucu() {
     }
 
+    /** Poziva ga samo statički inicijalizator {@link Potpisivac}a; bez JPMS-a je ovaj paket svima dostupan. */
     public static void postavi(Function<Potpisivac, PrivateKey> p) {
+        if (StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass() != Potpisivac.class) {
+            throw new IllegalStateException("Pristup ključu postavlja samo Potpisivac");
+        }
         if (pristup != null) {
             throw new IllegalStateException("Pristup ključu je već postavljen");
         }

@@ -165,14 +165,17 @@ These choices need confirming on the test environment:
 3. `Content-Type: application/xml; charset=utf-8` instead of the usual `text/xml` for SOAP 1.1.
 4. The published response examples are signed with RSA-SHA1, which the JDK's `secureValidation` rejects and which
    cannot be allowed for a single context. It is therefore off, and its relevant rules are checked explicitly:
-   same-document references only, an allow-list of algorithms and transforms, RSA keys of at least 2048 bits.
+   same-document references only, an allow-list of algorithms and transforms, RSA keys of at least 2048 bits and EC keys of at least 256.
 5. Every taxpayer has a FINA certificate, so a valid chain is not enough. By default the response signer's subject
-   must contain the OIB of the Ministry of Finance (`18683136487`), which Porezna's TLS certificate carries. If Porezna
-   signs responses with a different certificate, set your own check with `Builder.potpisnikOdgovora(...)`.
+   must carry the OIB of the Ministry of Finance (`18683136487`), as Porezna's TLS certificate does. If Porezna signs
+   responses with a different certificate, set your own check with `Builder.potpisnikOdgovora(...)`.
 6. B2C responses: by default the signer must be `CN=fiskalcis` (test: `fiskalcistest`, as in chapter 5 of the
-   specification) with APIS IT's OIB (`02994650199`) in the subject. The OIB is read from the subject's
-   organizationIdentifier, as in the official `fiskalcistest` certificate.
+   specification) with APIS IT's OIB (`02994650199`).
 7. B2C `prijaviRadnoVrijeme` is sent with the SOAPAction of `promijeniPodatkeRacuna`, as in the official WSDL v1.10.
+
+The OIB counts only where FINA puts it: in organizationIdentifier (`HR02994650199` in `fiskalcistest`) or in
+serialNumber (`VATHR-18683136487.341` in Porezna's certificate), never elsewhere in the subject, part of which the
+certificate holder chooses.
 
 ## Not done yet
 

@@ -10,7 +10,6 @@ import dev.mmatokovic.fiskalizacija.internal.b2c.B2cOdgovori;
 import dev.mmatokovic.fiskalizacija.internal.b2c.B2cZahtjevi;
 import dev.mmatokovic.fiskalizacija.internal.http.Postavke;
 import dev.mmatokovic.fiskalizacija.internal.http.SoapPoziv;
-import dev.mmatokovic.fiskalizacija.internal.potpis.PristupKljucu;
 import dev.mmatokovic.fiskalizacija.internal.potpis.Subjekt;
 import dev.mmatokovic.fiskalizacija.internal.potpis.XmlDsig;
 import dev.mmatokovic.fiskalizacija.internal.xml.Xml;
@@ -27,8 +26,6 @@ import java.security.cert.X509Certificate;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -196,7 +193,7 @@ public final class B2cClient {
     }
 
     private Rezultat posalji(B2cZahtjevi.Zahtjev zahtjev, String zastKod, String operacija, String odgovorElement) {
-        XmlDsig.potpisi(zahtjev.element(), zahtjev.id(), PristupKljucu.kljuc(potpisivac), potpisivac.certifikat());
+        XmlDsig.potpisi(zahtjev.element(), zahtjev.id(), potpisivac);
         if (postavke.xsdValidacija()) {
             var greske = Xsd.greske(zahtjev.element());
             if (!greske.isEmpty()) {
@@ -227,7 +224,7 @@ public final class B2cClient {
         RadnoVrijeme radnoVrijeme;
         try {
             radnoVrijeme = B2cOdgovori.radnoVrijeme(odgovorEl);
-        } catch (IllegalArgumentException | DateTimeParseException e) {
+        } catch (RuntimeException e) {
             throw new FiskalizacijaException("Neispravno radno vrijeme u odgovoru: " + e.getMessage() + " (HTTP " + status + ")",
                     status, tijelo, e);
         }

@@ -7,7 +7,6 @@ import dev.mmatokovic.fiskalizacija.PotpisOdgovora;
 import dev.mmatokovic.fiskalizacija.Potpisivac;
 import dev.mmatokovic.fiskalizacija.Primjeri;
 import dev.mmatokovic.fiskalizacija.internal.b2c.B2cZahtjevi;
-import dev.mmatokovic.fiskalizacija.internal.potpis.PristupKljucu;
 import dev.mmatokovic.fiskalizacija.internal.potpis.ProvjeraPotpisa;
 import dev.mmatokovic.fiskalizacija.internal.potpis.XmlDsig;
 import dev.mmatokovic.fiskalizacija.internal.xml.Xml;
@@ -299,6 +298,15 @@ class B2cClientTest {
     }
 
     @Test
+    void neispravnoRadnoVrijemeUOdgovoruJeIznimka() {
+        odgovor = Primjeri.tekst("/primjeri/b2c/DohvatiRadnoVrijemeOdgovor.xml").replace("<fis:ParNepar>P</fis:ParNepar>", "");
+
+        assertThatThrownBy(() -> client().dohvatiRadnoVrijeme("12345678901", "POS001", VrstaRadnogVremena.SVE, "10987654321"))
+                .isInstanceOf(FiskalizacijaException.class)
+                .hasMessageContaining("radno vrijeme");
+    }
+
+    @Test
     void dohvatSGreskomIzSluzbenogPrimjera() {
         odgovor = Primjeri.tekst("/primjeri/b2c/DohvatiRadnoVrijemeOdgovorGreska.xml");
 
@@ -385,7 +393,7 @@ class B2cClientTest {
             var tijelo = doc.getElementsByTagNameNS("http://schemas.xmlsoap.org/soap/envelope/", "Body").item(0);
             for (var n = tijelo.getFirstChild(); n != null; n = n.getNextSibling()) {
                 if (n instanceof Element el && el.hasAttribute("Id")) {
-                    XmlDsig.potpisi(el, el.getAttribute("Id"), PristupKljucu.kljuc(potpisivac), potpisivac.certifikat());
+                    XmlDsig.potpisi(el, el.getAttribute("Id"), potpisivac);
                     return Xml.serijaliziraj(doc);
                 }
             }

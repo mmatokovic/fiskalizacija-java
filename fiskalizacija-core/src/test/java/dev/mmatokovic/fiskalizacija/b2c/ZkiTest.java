@@ -1,5 +1,6 @@
 package dev.mmatokovic.fiskalizacija.b2c;
 
+import dev.mmatokovic.fiskalizacija.NeispravanZahtjevException;
 import dev.mmatokovic.fiskalizacija.Primjeri;
 import dev.mmatokovic.fiskalizacija.internal.potpis.PristupKljucu;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,6 @@ class ZkiTest {
     void iznosSViseOdDvijeDecimaleJeGreska() {
         assertThatThrownBy(() -> Zki.izracunaj(potpisivac, "12345678903", LocalDateTime.of(2026, 3, 2, 8, 5, 9),
                 new BrojRacuna("1", "P1", "1"), new BigDecimal("1.005")))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NeispravanZahtjevException.class);
     }
 }
