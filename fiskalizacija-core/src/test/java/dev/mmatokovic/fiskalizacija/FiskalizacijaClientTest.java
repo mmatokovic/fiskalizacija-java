@@ -4,19 +4,22 @@ import dev.mmatokovic.fiskalizacija.internal.ProvjeraPotpisa;
 import dev.mmatokovic.fiskalizacija.internal.Xml;
 import dev.mmatokovic.fiskalizacija.internal.Xsd;
 import dev.mmatokovic.fiskalizacija.internal.Zahtjevi;
-import com.sun.net.httpserver.HttpServer;
 import dev.mmatokovic.fiskalizacija.model.NacinPlacanja;
 import dev.mmatokovic.fiskalizacija.model.Naplata;
 import dev.mmatokovic.fiskalizacija.model.Odbijanje;
 import dev.mmatokovic.fiskalizacija.model.VrstaERacuna;
 import dev.mmatokovic.fiskalizacija.model.VrstaRazlogaOdbijanja;
+import mockwebserver3.Dispatcher;
+import mockwebserver3.MockResponse;
+import mockwebserver3.MockWebServer;
+import mockwebserver3.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.InetSocketAddress;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -49,7 +52,7 @@ class FiskalizacijaClientTest {
     private final List<String> primljeno = new CopyOnWriteArrayList<>();
     private final List<String> contentType = new CopyOnWriteArrayList<>();
     private final List<String> soapAction = new CopyOnWriteArrayList<>();
-    private HttpServer server;
+    private MockWebServer server;
     private volatile int status;
     /** Tijelo odgovora; {@value #ID_ZAHTJEVA} se zamjenjuje id-jem primljenog zahtjeva. */
     private volatile String odgovor;
@@ -60,29 +63,29 @@ class FiskalizacijaClientTest {
 
     @BeforeEach
     void pokreni() throws IOException {
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/", ex -> {
-            String zahtjev = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            primljeno.add(zahtjev);
-            contentType.add(ex.getRequestHeaders().getFirst("Content-Type"));
-            soapAction.add(ex.getRequestHeaders().getFirst("SOAPAction"));
-            var id = Pattern.compile(":id=\"([^\"]+)\"").matcher(zahtjev);
-            String o = id.find() ? odgovor.replace(ID_ZAHTJEVA, id.group(1)) : odgovor;
-            if (potpisati != null) {
-                o = potpisi(o, potpisati);
+        server = new MockWebServer();
+        server.setDispatcher(new Dispatcher() {
+            @Override
+            public MockResponse dispatch(RecordedRequest r) {
+                String zahtjev = r.getBody() == null ? "" : r.getBody().utf8();
+                primljeno.add(zahtjev);
+                contentType.add(r.getHeaders().get("Content-Type"));
+                soapAction.add(r.getHeaders().get("SOAPAction"));
+                var id = Pattern.compile(":id=\"([^\"]+)\"").matcher(zahtjev);
+                String o = id.find() ? odgovor.replace(ID_ZAHTJEVA, id.group(1)) : odgovor;
+                if (potpisati != null) {
+                    o = potpisi(o, potpisati);
+                }
+                poslano.add(o);
+                return new MockResponse.Builder().code(status).body(o).build();
             }
-            poslano.add(o);
-            byte[] tijelo = o.getBytes(StandardCharsets.UTF_8);
-            ex.sendResponseHeaders(status, tijelo.length);
-            ex.getResponseBody().write(tijelo);
-            ex.close();
         });
-        server.start();
+        server.start(InetAddress.getLoopbackAddress(), 0);
     }
 
     @AfterEach
     void zaustavi() {
-        server.stop(0);
+        server.close();
     }
 
     @Test
@@ -162,7 +165,7 @@ class FiskalizacijaClientTest {
     @Test
     void nedostupanServisJeIznimkaBezStatusa() {
         var c = client();
-        server.stop(0);
+        server.close();
 
         var e = assertThrows(FiskalizacijaException.class, () -> c.evidentirajNaplatu(naplata()));
 
@@ -303,7 +306,7 @@ class FiskalizacijaClientTest {
         var zahtjev = c.pripremiNaplatu(List.of(naplata()));
 
         var http = HttpClient.newHttpClient().send(HttpRequest.newBuilder(
-                        URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/FiskalizacijaService"))
+                        URI.create("http://127.0.0.1:" + server.getPort() + "/FiskalizacijaService"))
                 .POST(HttpRequest.BodyPublishers.ofString(zahtjev.soap())).build(), HttpResponse.BodyHandlers.ofString());
         var r = c.obradiOdgovor(zahtjev, http.statusCode(), http.body());
 
@@ -352,7 +355,7 @@ class FiskalizacijaClientTest {
         status = 200;
         odgovor = potpisanOdgovor("EvidentirajNaplatuOdgovor", "<eizv:prihvacenZahtjev>true</eizv:prihvacenZahtjev>");
         var zadani = FiskalizacijaClient.builder(Okruzenje.TEST, potpisivac)
-                .adresa(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/FiskalizacijaService"))
+                .adresa(URI.create("http://127.0.0.1:" + server.getPort() + "/FiskalizacijaService"))
                 .povjerljiviCertifikati(Primjeri.sidra(potpisivac), List.of())
                 .build();
 
@@ -435,7 +438,7 @@ class FiskalizacijaClientTest {
 
     private FiskalizacijaClient.Builder builder() {
         return FiskalizacijaClient.builder(Okruzenje.TEST, potpisivac)
-                .adresa(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/FiskalizacijaService"))
+                .adresa(URI.create("http://127.0.0.1:" + server.getPort() + "/FiskalizacijaService"))
                 .povjerljiviCertifikati(Primjeri.sidra(potpisivac), List.of())
                 .timeout(Duration.ofSeconds(5))
                 .sat(Primjeri.SAT)
