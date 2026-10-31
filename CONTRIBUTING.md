@@ -10,10 +10,19 @@ Only JDK 17+ is required; the wrapper downloads Maven. Unit tests need no networ
 `PoreznaTestnoOkruzenjeIT` calls the real Porezna uprava test environment and runs only when `FISK_P12`,
 `FISK_P12_LOZINKA` and `FISK_OIB` are set (see the README). Coverage report: `fiskalizacija-core/target/site/jacoco/index.html`.
 
+## Sources
+
+The library follows the official sources, which are the documentation for its development:
+
+- [porezna.gov.hr](https://porezna.gov.hr): technical specifications, XSD schemas and examples of Porezna uprava
+- [web.dzs.hr](https://web.dzs.hr): KPD product classification
+- [ec.europa.eu](https://ec.europa.eu): EN 16931 and European eInvoicing
+- [narodne-novine.nn.hr](https://narodne-novine.nn.hr): Zakon o fiskalizaciji and its pravilnici
+
 ## Rules
 
 - `fiskalizacija-core` must have no external dependencies, only the JDK.
-- The public API is `dev.mmatokovic.fiskalizacija` and `dev.mmatokovic.fiskalizacija.model`. Everything else goes in
+- The public API is `dev.mmatokovic.fiskalizacija`, `dev.mmatokovic.fiskalizacija.model` and `dev.mmatokovic.fiskalizacija.b2c`. Everything else goes in
   `dev.mmatokovic.fiskalizacija.internal`, which `module-info.java` does not export.
 - Write javadoc where it tells the reader something the signature does not. Doclint checks syntax and references.
 - Domain names (classes, fields, methods) stay in Croatian and follow the official XSD and specification terms.

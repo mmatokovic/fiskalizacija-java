@@ -6,10 +6,12 @@
 
 [README in English](README.md)
 
-Java klijent za **Fiskalizaciju 2.0 (B2B)**: evidentiranje eRačuna i eIzvještavanje prema Poreznoj upravi.
+Java klijent za fiskalizaciju prema Poreznoj upravi: **Fiskalizacija 2.0 (B2B)**, odnosno evidentiranje eRačuna i
+eIzvještavanje, i **Fiskalizacija 1.0 (B2C)**, odnosno fiskalizacija računa u krajnjoj potrošnji.
 
 - Sve četiri poruke: `EvidentirajERacun` (izlazni i ulazni), `EvidentirajNaplatu`, `EvidentirajOdbijanje`, `EvidentirajIsporukuZaKojuNijeIzdanERacun`
 - Čitanje UBL 2.1 eRačuna (HR CIUS, Invoice i CreditNote, i unutar StandardBusinessDocument omotnice)
+- Fiskalizacija 1.0 (B2C): računi sa ZKI-jem i JIR-om, poveznica za QR kod, promjena podataka o plaćanju, napojnice i radno vrijeme poslovnog prostora (tehnička specifikacija v2.7)
 - XAdES-B potpis zahtjeva i provjera potpisa odgovora, uključujući lanac do FINA CA
 - Validacija prema službenim XSD shemama prije slanja, OIB s kontrolnom znamenkom pri čitanju UBL-a
 - **Bez vanjskih ovisnosti**: samo JDK 17+ (`java.xml`, `java.xml.crypto`, `java.net.http`)
@@ -114,6 +116,41 @@ var greske = new ArrayList<String>();
 Racun racun = UblParser.racun(xml, greske);
 ```
 
+## Fiskalizacija 1.0 (B2C)
+
+Računi u krajnjoj potrošnji, i B2B računi plaćeni gotovinom ili karticom, fiskaliziraju se s `B2cClient` iz paketa
+`dev.mmatokovic.fiskalizacija.b2c`, prema tehničkoj specifikaciji v2.7 i shemi f73.
+
+```java
+var client = B2cClient.builder(Okruzenje.TEST, potpisivac).build();
+
+var racun = Racun.builder("12345678903", LocalDateTime.now(ZoneId.of("Europe/Zagreb")),
+                new BrojRacuna("1", "POSL1", "1"), new BigDecimal("12.50"), NacinPlacanja.K, "12345678903")
+        .pdv(List.of(new Porez(new BigDecimal("25.00"), new BigDecimal("10.00"), new BigDecimal("2.50"))))
+        .build();
+
+B2cRezultat r = client.racun(racun);
+String qr = QrKod.poveznica(r, racun);   // s JIR-om, ili sa ZKI-jem ako JIR-a nema
+```
+
+- Klijent izračuna ZKI (`Zki.izracunaj`) ako ga račun nema; u svakom slučaju je u `r.zastKod()`.
+- Bez JIR-a kupcu se izdaje račun sa ZKI-jem, a račun se naknadno šalje s `nakDost(true)`.
+- Zahtjevi se potpisuju RSA-SHA256: testno okruženje RSA-SHA1 odbija od 1. 7. 2026., a produkcija od 1. 1. 2027.
+- `prihvacen()` je `true` samo bez grešaka i uz ispravan potpis odgovora, kao kod Fiskalizacije 2.0.
+
+Podržane su sve operacije iz specifikacije:
+
+| Metoda | Što radi |
+|---|---|
+| `racun` | fiskalizira račun, vraća JIR |
+| `promijeniPodatkeRacuna` | mijenja način plaćanja i OIB kupca isti dan; `null` OIB ga briše |
+| `promijeniNacPlac` | mijenja samo način plaćanja; specifikacija je najavljuje za ukidanje |
+| `napojnica` | prijavljuje napojnicu uz fiskalizirani račun, najkasnije dva dana nakon izdavanja |
+| `prijaviRadnoVrijeme`, `obrisiRadnoVrijeme`, `dohvatiRadnoVrijeme` | radno vrijeme poslovnog prostora |
+| `prijaviRadnoVrijemeZaPoslovnice` | radno vrijeme za do 100 poslovnih prostora, s ishodom za svaki u `poslovnice()` |
+| `provjera` | provjerava račun bez evidentiranja; samo testno okruženje |
+| `echo` | provjerava je li servis dostupan |
+
 ## Otvorena pitanja
 
 Ove odluke treba potvrditi na testnom okruženju:
@@ -127,24 +164,27 @@ Ove odluke treba potvrditi na testnom okruženju:
 5. Svaki porezni obveznik ima FINA certifikat, pa ispravan lanac nije dovoljan. Zadano subjekt potpisnika odgovora
    mora sadržavati OIB Ministarstva financija (`18683136487`), kakav ima i Poreznin TLS certifikat. Ako Porezna
    odgovore potpisuje drugim certifikatom, postavite vlastitu provjeru s `Builder.potpisnikOdgovora(...)`.
+6. B2C odgovori: zadano potpisnik mora biti `CN=fiskalcis` (u testu `fiskalcistest`, kao u poglavlju 5
+   specifikacije) s OIB-om APIS IT-a (`02994650199`) u subjektu. OIB se čita iz atributa organizationIdentifier,
+   kao u službenom certifikatu `fiskalcistest`.
+7. B2C `prijaviRadnoVrijeme` šalje se sa SOAPAction od `promijeniPodatkeRacuna`, kao u službenom WSDL-u v1.10.
 
 ## Što još nije napravljeno
 
 - Spring Boot 4 starter (`fiskalizacija-spring-boot-starter`)
 - `OvlastenjaFiskalizacije` (dohvat ovlaštenja)
-- Fiskalizacija 1.0 (B2C, CIS), uključujući ZKI
 - Objava na Maven Central
 
 ## Moduli i API
 
 | Artefakt | Sadržaj |
 |---|---|
-| `fiskalizacija-core` | fiskalizacijske poruke i eIzvještavanje, čitanje UBL-a, potpis; samo JDK |
+| `fiskalizacija-core` | poruke Fiskalizacije 2.0 i 1.0, čitanje UBL-a, potpis; samo JDK |
 | `fiskalizacija-eracun` | validacija eRačuna prema UBL XSD-u, EN 16931 i HR CIUS pravilima (koristi phax ph-ubl i phive-rules); u izradi, još se ne objavljuje |
 | `fiskalizacija-examples` | pokretljivi primjeri; ne objavljuje se |
 
-`fiskalizacija-core` je JPMS modul `dev.mmatokovic.fiskalizacija`. Javni API su paketi `dev.mmatokovic.fiskalizacija` i
-`dev.mmatokovic.fiskalizacija.model`; paket `dev.mmatokovic.fiskalizacija.internal` modul ne izvozi i mijenja se bez najave.
+`fiskalizacija-core` je JPMS modul `dev.mmatokovic.fiskalizacija`. Javni API su paketi `dev.mmatokovic.fiskalizacija`,
+`dev.mmatokovic.fiskalizacija.model` i `dev.mmatokovic.fiskalizacija.b2c`; paket `dev.mmatokovic.fiskalizacija.internal` modul ne izvozi i mijenja se bez najave.
 Do verzije 1.0.0 javni API se može mijenjati između minor verzija (vidi [CHANGELOG.md](CHANGELOG.md)).
 
 ## Build
@@ -165,6 +205,9 @@ Izvještaj o pokrivenosti testovima je u `fiskalizacija-core/target/site/jacoco/
 ulazni eRačun pa odbijanje, i isporuku bez eRačuna. Treba demo aplikacijski certifikat (FINA Demo CA) i OIB na
 koji je izdan; bez njih se testovi preskaču.
 
+`B2cTestnoOkruzenjeIT` radi isto za Fiskalizaciju 1.0 (`-Dit.test=B2cTestnoOkruzenjeIT`). Računi i radno vrijeme trebaju
+još `FISK_OZN_POS_PR`, poslovni prostor otvoren na OIB certifikata u testnom okruženju.
+
 ```bash
 FISK_P12=/putanja/demo.p12 FISK_P12_LOZINKA=... FISK_OIB=... ./mvnw verify -Dit.test=PoreznaTestnoOkruzenjeIT
 ```
@@ -182,6 +225,7 @@ $env:FISK_P12='C:\putanja\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB=
 | `ValidacijaERacuna` | validira eRačun prema UBL XSD-u, EN 16931 i HR CIUS-u; ne treba certifikat |
 | `EvidentiranjeERacuna` | validira izlazni eRačun i fiskalizira ga na testnom okruženju |
 | `EvidentiranjeNaplate` | fiskalizira izlazni eRačun pa njegovu naplatu |
+| `FiskalizacijaRacuna` | fiskalizira račun Fiskalizacije 1.0 i ispisuje JIR, ZKI i poveznicu za QR kod; treba i `FISK_OZN_POS_PR` |
 
 Svaki prima putanju do eRačuna kao neobvezan argument. Bez nje koriste `primjer-eracun.xml` s OIB-om iz
 `FISK_OIB`, novim brojem računa i današnjim datumom. Primjeri fiskalizacije trebaju iste varijable kao testno

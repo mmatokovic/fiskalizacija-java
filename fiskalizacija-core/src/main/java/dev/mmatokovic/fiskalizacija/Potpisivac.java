@@ -1,5 +1,6 @@
 package dev.mmatokovic.fiskalizacija;
 
+import dev.mmatokovic.fiskalizacija.internal.PristupKljucu;
 import org.w3c.dom.Element;
 
 import javax.xml.crypto.dom.DOMStructure;
@@ -35,6 +36,10 @@ public final class Potpisivac {
 
     private static final String NS_DS = "http://www.w3.org/2000/09/xmldsig#";
     private static final String NS_XADES = "http://uri.etsi.org/01903/v1.3.2#";
+
+    static {
+        PristupKljucu.postavi(p -> p.kljuc);
+    }
 
     private final PrivateKey kljuc;
     private final X509Certificate certifikat;

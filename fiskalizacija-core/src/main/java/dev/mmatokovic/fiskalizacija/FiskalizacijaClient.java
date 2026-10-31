@@ -1,6 +1,8 @@
 package dev.mmatokovic.fiskalizacija;
 
 import dev.mmatokovic.fiskalizacija.internal.ProvjeraPotpisa;
+import dev.mmatokovic.fiskalizacija.internal.SoapPoziv;
+import dev.mmatokovic.fiskalizacija.internal.Subjekt;
 import dev.mmatokovic.fiskalizacija.internal.Xml;
 import dev.mmatokovic.fiskalizacija.internal.Xsd;
 import dev.mmatokovic.fiskalizacija.internal.Zahtjevi;
@@ -14,13 +16,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import javax.net.ssl.SSLContext;
-import java.io.IOException;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
 import java.time.Clock;
@@ -50,8 +48,6 @@ public final class FiskalizacijaClient {
 
     /** OIB Ministarstva financija, kojem pripada Porezna uprava; nalazi se u certifikatima njezinih servisa. */
     public static final String OIB_MINISTARSTVA_FINANCIJA = "18683136487";
-
-    private static final int MAKS_ODGOVOR = 10 * 1024 * 1024;
 
     private final URI adresa;
     private final Potpisivac potpisivac;
@@ -216,32 +212,8 @@ public final class FiskalizacijaClient {
      * @throws FiskalizacijaException ako poziv ne uspije ili odgovor nije valjan fiskalizacijski odgovor
      */
     public Rezultat posalji(PripremljeniZahtjev zahtjev) {
-        int status;
-        String tijelo;
-        try {
-            var odgovor = http.send(HttpRequest.newBuilder(adresa)
-                            .timeout(timeout)
-                            .header("Content-Type", "application/xml; charset=utf-8")
-                            .header("SOAPAction", "\"\"")
-                            .POST(HttpRequest.BodyPublishers.ofString(zahtjev.soap(), StandardCharsets.UTF_8))
-                            .build(),
-                    HttpResponse.BodyHandlers.ofInputStream());
-            status = odgovor.statusCode();
-            try (var in = odgovor.body()) {
-                byte[] bajtovi = in.readNBytes(MAKS_ODGOVOR + 1);
-                if (bajtovi.length > MAKS_ODGOVOR) {
-                    throw new FiskalizacijaException("Odgovor je veći od " + MAKS_ODGOVOR + " bajtova (HTTP " + status + ")",
-                            status, null, null);
-                }
-                tijelo = new String(bajtovi, StandardCharsets.UTF_8);
-            }
-        } catch (IOException e) {
-            throw new FiskalizacijaException("Slanje na " + adresa + " nije uspjelo: " + e.getMessage(), 0, null, e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new FiskalizacijaException("Slanje prekinuto", 0, null, e);
-        }
-        return obradiOdgovor(zahtjev, status, tijelo);
+        var odgovor = SoapPoziv.posalji(http, adresa, timeout, "application/xml; charset=utf-8", "", zahtjev.soap());
+        return obradiOdgovor(zahtjev, odgovor.status(), odgovor.tijelo());
     }
 
     /**
@@ -372,8 +344,7 @@ public final class FiskalizacijaClient {
         private Duration timeout = Duration.ofSeconds(30);
         private boolean xsdValidacija = true;
         private Clock sat = Clock.system(ZoneId.of("Europe/Zagreb"));
-        private Predicate<X509Certificate> potpisnikOdgovora =
-                c -> c.getSubjectX500Principal().getName().contains(OIB_MINISTARSTVA_FINANCIJA);
+        private Predicate<X509Certificate> potpisnikOdgovora = Subjekt.sadrziOib(OIB_MINISTARSTVA_FINANCIJA);
         private ProxySelector proxy;
 
         private Builder(Okruzenje okruzenje, Potpisivac potpisivac) {

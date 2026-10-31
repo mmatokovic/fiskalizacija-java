@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tehnička specifikacija za korisnike v2.7, primjer 2.8.3.4 (odgovor za dohvat radnog vremena); prefiks fis: dodan kao u primjerima iz poglavlja 9, IdPoruke zamjenjuju testovi -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"><soapenv:Body>
+<fis:DohvatiRadnoVrijemeOdgovor xmlns:fis="http://www.apis-it.hr/fin/2012/types/f73" Id="G0x7f4b6b4386d0-5D">
+<fis:Zaglavlje><fis:IdPoruke>ID_PORUKE</fis:IdPoruke><fis:DatumVrijeme>08.12.2025T13:47:43</fis:DatumVrijeme></fis:Zaglavlje>
+<fis:PoslovniProstor><fis:Oib>12345678901</fis:Oib><fis:OznPosPr>POS001</fis:OznPosPr><fis:RadnoVrijeme><fis:Redovno>
+<fis:DatumOd>08.12.2025</fis:DatumOd>
+<fis:ParniNeparni><fis:DanUTjednu>1</fis:DanUTjednu><fis:ParNepar>P</fis:ParNepar><fis:RadnoVrijemeOd>08:30</fis:RadnoVrijemeOd><fis:RadnoVrijemeDo>12:00</fis:RadnoVrijemeDo></fis:ParniNeparni>
+<fis:ParniNeparni><fis:DanUTjednu>1</fis:DanUTjednu><fis:ParNepar>N</fis:ParNepar><fis:RadnoVrijemeOd>10:00</fis:RadnoVrijemeOd><fis:RadnoVrijemeDo>19:00</fis:RadnoVrijemeDo></fis:ParniNeparni>
+<fis:ParniNeparni><fis:DanUTjednu>3</fis:DanUTjednu><fis:ParNepar>P</fis:ParNepar><fis:RadnoVrijemeOd>08:30</fis:RadnoVrijemeOd><fis:RadnoVrijemeDo>12:00</fis:RadnoVrijemeDo></fis:ParniNeparni>
+<fis:ParniNeparni><fis:DanUTjednu>3</fis:DanUTjednu><fis:ParNepar>N</fis:ParNepar><fis:RadnoVrijemeOd>10:00</fis:RadnoVrijemeOd><fis:RadnoVrijemeDo>18:00</fis:RadnoVrijemeDo></fis:ParniNeparni>
+<fis:ParniNeparni><fis:DanUTjednu>5</fis:DanUTjednu><fis:ParNepar>P</fis:ParNepar><fis:RadnoVrijemeOd>08:30</fis:RadnoVrijemeOd><fis:RadnoVrijemeDo>11:00</fis:RadnoVrijemeDo></fis:ParniNeparni>
+<fis:ParniNeparni><fis:DanUTjednu>5</fis:DanUTjednu><fis:ParNepar>N</fis:ParNepar><fis:RadnoVrijemeOd>10:00</fis:RadnoVrijemeOd><fis:RadnoVrijemeDo>16:00</fis:RadnoVrijemeDo></fis:ParniNeparni>
+</fis:Redovno></fis:RadnoVrijeme></fis:PoslovniProstor>
+</fis:DohvatiRadnoVrijemeOdgovor></soapenv:Body></soapenv:Envelope>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tehnička specifikacija za korisnike v2.7, primjer 2.8.4.4 (uspješna prijava radnog vremena za listu poslovnih prostora); prefiks fis: dodan, IdPoruke zamjenjuju testovi -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"><soapenv:Body>
+<fis:PrijaviRadnoVrijemeZaPoslovniceOdgovor xmlns:fis="http://www.apis-it.hr/fin/2012/types/f73" Id="G0x7f4b67c06050-5D">
+<fis:Zaglavlje><fis:IdPoruke>ID_PORUKE</fis:IdPoruke><fis:DatumVrijeme>05.12.2025T21:57:21</fis:DatumVrijeme></fis:Zaglavlje><fis:PoslovniProstoriOdgovor>
+<fis:PoslovnicaOdgovor><fis:OznPosPr>POS01</fis:OznPosPr><fis:PorukaOdgovora><fis:SifraPoruke>p003</fis:SifraPoruke><fis:Poruka>Uspjesna dostava podataka radnog vremena poslovnog prostora.</fis:Poruka></fis:PorukaOdgovora></fis:PoslovnicaOdgovor>
+<fis:PoslovnicaOdgovor><fis:OznPosPr>POS02</fis:OznPosPr><fis:PorukaOdgovora><fis:SifraPoruke>p003</fis:SifraPoruke><fis:Poruka>Uspjesna dostava podataka radnog vremena poslovnog prostora.</fis:Poruka></fis:PorukaOdgovora></fis:PoslovnicaOdgovor>
+<fis:PoslovnicaOdgovor><fis:OznPosPr>POS03</fis:OznPosPr><fis:PorukaOdgovora><fis:SifraPoruke>p003</fis:SifraPoruke><fis:Poruka>Uspjesna dostava podataka radnog vremena poslovnog prostora.</fis:Poruka></fis:PorukaOdgovora></fis:PoslovnicaOdgovor>
+</fis:PoslovniProstoriOdgovor></fis:PrijaviRadnoVrijemeZaPoslovniceOdgovor></soapenv:Body></soapenv:Envelope>

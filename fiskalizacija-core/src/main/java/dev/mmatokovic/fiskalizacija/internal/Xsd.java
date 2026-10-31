@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Provjera poruke prema službenim XSD shemama Porezne uprave (eFiskalizacija i eIzvjestavanje), ugrađenim u library. */
+/** Provjera poruke prema službenim XSD shemama Porezne uprave (eFiskalizacija, eIzvjestavanje i fiskalizacija u krajnjoj potrošnji), ugrađenim u library. */
 public final class Xsd {
 
     private static final Schema SHEMA = ucitaj();
@@ -54,7 +54,8 @@ public final class Xsd {
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             return sf.newSchema(new StreamSource[]{
                     new StreamSource(resurs("xsd/eFiskalizacijaSchema.xsd")),
-                    new StreamSource(resurs("xsd/eIzvjestavanjeSchema.xsd"))});
+                    new StreamSource(resurs("xsd/eIzvjestavanjeSchema.xsd")),
+                    new StreamSource(resurs("xsd/FiskalizacijaSchema.xsd"))});
         } catch (SAXException e) {
             throw new IllegalStateException("Ne mogu učitati ugrađene XSD sheme", e);
         }

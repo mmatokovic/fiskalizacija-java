@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tehnička specifikacija za korisnike v2.7, primjer 9.3 (poruka odgovora za račun); IdPoruke zamjenjuju testovi, a Id je dodan za potpis -->
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soap:Body>
+        <tns:RacunOdgovor Id="G0xcabf5080-4D"
+xsi:schemaLocation="http://www.apis-it.hr/fin/2012/types/f73 ../schema/FiskalizacijaSchema.xsd "
+xmlns:tns="http://www.apis-it.hr/fin/2012/types/f73">
+            <tns:Zaglavlje>
+                 <tns:IdPoruke>ID_PORUKE</tns:IdPoruke>
+                 <tns:DatumVrijeme>01.09.2012T21:10:38</tns:DatumVrijeme>
+            </tns:Zaglavlje>
+            <tns:Jir>6b7749c6-56c1-4cf5-b7f7-9f29cebc9f7f</tns:Jir>
+        </tns:RacunOdgovor>
+    </soap:Body>
+</soap:Envelope>

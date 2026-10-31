@@ -4,6 +4,7 @@ import dev.mmatokovic.fiskalizacija.FiskalizacijaClient;
 import dev.mmatokovic.fiskalizacija.Okruzenje;
 import dev.mmatokovic.fiskalizacija.Potpisivac;
 import dev.mmatokovic.fiskalizacija.Rezultat;
+import dev.mmatokovic.fiskalizacija.b2c.B2cClient;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -25,8 +26,20 @@ final class TestnoOkruzenje {
     }
 
     static FiskalizacijaClient klijent() {
-        var potpisivac = Potpisivac.izP12(Path.of(varijabla("FISK_P12")), varijabla("FISK_P12_LOZINKA").toCharArray());
-        return FiskalizacijaClient.builder(Okruzenje.TEST, potpisivac).build();
+        return FiskalizacijaClient.builder(Okruzenje.TEST, potpisivac()).build();
+    }
+
+    static B2cClient b2cKlijent() {
+        return B2cClient.builder(Okruzenje.TEST, potpisivac()).build();
+    }
+
+    /** Poslovni prostor iz {@code FISK_OZN_POS_PR}, otvoren na OIB demo certifikata. */
+    static String oznPosPr() {
+        return varijabla("FISK_OZN_POS_PR");
+    }
+
+    private static Potpisivac potpisivac() {
+        return Potpisivac.izP12(Path.of(varijabla("FISK_P12")), varijabla("FISK_P12_LOZINKA").toCharArray());
     }
 
     static String oib() {
@@ -69,7 +82,7 @@ final class TestnoOkruzenje {
     private static String varijabla(String ime) {
         String vrijednost = System.getenv(ime);
         if (vrijednost == null || vrijednost.isBlank()) {
-            throw new IllegalStateException("Postavite varijable okoline FISK_P12, FISK_P12_LOZINKA i FISK_OIB (nedostaje " + ime + ")");
+            throw new IllegalStateException("Postavite varijablu okoline " + ime + " (vidi README, odjeljak Primjeri)");
         }
         return vrijednost;
     }

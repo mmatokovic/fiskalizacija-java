@@ -6,11 +6,12 @@
 
 [README na hrvatskom](README-HR.md)
 
-Java client for Croatian **Fiskalizacija 2.0 (B2B)**: fiscalization of eRačun (e-invoices) and eIzvještavanje
-(e-reporting) to Porezna uprava, the Croatian Tax Administration.
+Java client for Croatian fiscalization to Porezna uprava, the Croatian Tax Administration: **Fiskalizacija 2.0 (B2B)**
+eRačun (e-invoices) and eIzvještavanje (e-reporting), and **Fiskalizacija 1.0 (B2C)** invoices to consumers.
 
 - All four messages: `EvidentirajERacun` (issued and received), `EvidentirajNaplatu`, `EvidentirajOdbijanje`, `EvidentirajIsporukuZaKojuNijeIzdanERacun`
 - Reads UBL 2.1 eRačun (HR CIUS, Invoice and CreditNote, also inside a StandardBusinessDocument envelope)
+- Fiskalizacija 1.0 (B2C): invoices with ZKI and JIR, QR code link, payment data changes, tips and business premises working hours (technical specification v2.7)
 - XAdES-B request signing and response signature verification, including the chain up to the FINA CA
 - Validation against the official XSD schemas before sending, OIB check digit when reading UBL
 - **No external dependencies**: only JDK 17+ (`java.xml`, `java.xml.crypto`, `java.net.http`)
@@ -119,6 +120,42 @@ var greske = new ArrayList<String>();
 Racun racun = UblParser.racun(xml, greske);
 ```
 
+## Fiskalizacija 1.0 (B2C)
+
+Invoices to consumers, and B2B invoices paid in cash or by card, are fiscalized with `B2cClient` in the
+`dev.mmatokovic.fiskalizacija.b2c` package, following technical specification v2.7 and schema f73.
+
+```java
+var client = B2cClient.builder(Okruzenje.TEST, potpisivac).build();
+
+var racun = Racun.builder("12345678903", LocalDateTime.now(ZoneId.of("Europe/Zagreb")),
+                new BrojRacuna("1", "POSL1", "1"), new BigDecimal("12.50"), NacinPlacanja.K, "12345678903")
+        .pdv(List.of(new Porez(new BigDecimal("25.00"), new BigDecimal("10.00"), new BigDecimal("2.50"))))
+        .build();
+
+B2cRezultat r = client.racun(racun);
+String qr = QrKod.poveznica(r, racun);   // with the JIR, or with the ZKI if there is no JIR
+```
+
+- The client computes the ZKI (`Zki.izracunaj`) unless the invoice already has one; it is in `r.zastKod()` either way.
+- Without a JIR, give the customer the invoice with the ZKI and send it again later with `nakDost(true)`.
+- Requests are signed with RSA-SHA256: the test environment rejects RSA-SHA1 since 1 July 2026, production from
+  1 January 2027.
+- `prihvacen()` is `true` only without errors and with a valid response signature, as in Fiskalizacija 2.0.
+
+All operations of the specification are supported:
+
+| Method | What it does |
+|---|---|
+| `racun` | fiscalizes an invoice, returns the JIR |
+| `promijeniPodatkeRacuna` | changes the payment method and the buyer's OIB the same day; `null` OIB removes it |
+| `promijeniNacPlac` | changes only the payment method; the specification will retire it |
+| `napojnica` | reports a tip for a fiscalized invoice, at most two days later |
+| `prijaviRadnoVrijeme`, `obrisiRadnoVrijeme`, `dohvatiRadnoVrijeme` | working hours of a business premises |
+| `prijaviRadnoVrijemeZaPoslovnice` | working hours for up to 100 premises, with a result per premises in `poslovnice()` |
+| `provjera` | checks an invoice without recording it; test environment only |
+| `echo` | checks that the service is up |
+
 ## Open questions
 
 These choices need confirming on the test environment:
@@ -132,24 +169,27 @@ These choices need confirming on the test environment:
 5. Every taxpayer has a FINA certificate, so a valid chain is not enough. By default the response signer's subject
    must contain the OIB of the Ministry of Finance (`18683136487`), which Porezna's TLS certificate carries. If Porezna
    signs responses with a different certificate, set your own check with `Builder.potpisnikOdgovora(...)`.
+6. B2C responses: by default the signer must be `CN=fiskalcis` (test: `fiskalcistest`, as in chapter 5 of the
+   specification) with APIS IT's OIB (`02994650199`) in the subject. The OIB is read from the subject's
+   organizationIdentifier, as in the official `fiskalcistest` certificate.
+7. B2C `prijaviRadnoVrijeme` is sent with the SOAPAction of `promijeniPodatkeRacuna`, as in the official WSDL v1.10.
 
 ## Not done yet
 
 - Spring Boot 4 starter (`fiskalizacija-spring-boot-starter`)
 - `OvlastenjaFiskalizacije` (fetching authorisations)
-- Fiskalizacija 1.0 (B2C, CIS), including ZKI
 - Publishing to Maven Central
 
 ## Modules and API
 
 | Artifact | Contents |
 |---|---|
-| `fiskalizacija-core` | fiscalization and eIzvještavanje messages, UBL parsing, signing; JDK only |
+| `fiskalizacija-core` | Fiskalizacija 2.0 and 1.0 messages, UBL parsing, signing; JDK only |
 | `fiskalizacija-eracun` | eRačun validation against UBL XSD, EN 16931 and HR CIUS rules (uses phax ph-ubl and phive-rules); in progress, not published yet |
 | `fiskalizacija-examples` | runnable examples; not published |
 
 `fiskalizacija-core` is the JPMS module `dev.mmatokovic.fiskalizacija`. The public API is the
-`dev.mmatokovic.fiskalizacija` and `dev.mmatokovic.fiskalizacija.model` packages; the module does not export
+`dev.mmatokovic.fiskalizacija`, `dev.mmatokovic.fiskalizacija.model` and `dev.mmatokovic.fiskalizacija.b2c` packages; the module does not export
 `dev.mmatokovic.fiskalizacija.internal`, which may change without notice. Before 1.0.0 the public API may change
 between minor versions (see [CHANGELOG.md](CHANGELOG.md)).
 
@@ -171,6 +211,9 @@ The test coverage report is in `fiskalizacija-core/target/site/jacoco/index.html
 a payment, a received eRačun followed by a rejection, and a supply without an eRačun. It needs a demo application
 certificate (FINA Demo CA) and the OIB it was issued to; without them the tests are skipped.
 
+`B2cTestnoOkruzenjeIT` does the same for Fiskalizacija 1.0 (`-Dit.test=B2cTestnoOkruzenjeIT`). Invoices and working
+hours also need `FISK_OZN_POS_PR`, a business premises opened for the certificate's OIB on the test environment.
+
 ```bash
 FISK_P12=/path/demo.p12 FISK_P12_LOZINKA=... FISK_OIB=... ./mvnw verify -Dit.test=PoreznaTestnoOkruzenjeIT
 ```
@@ -188,6 +231,7 @@ $env:FISK_P12='C:\path\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB='..
 | `ValidacijaERacuna` | validates an eRačun against UBL XSD, EN 16931 and HR CIUS; needs no certificate |
 | `EvidentiranjeERacuna` | validates an issued eRačun and fiscalizes it on the test environment |
 | `EvidentiranjeNaplate` | fiscalizes an issued eRačun, then its payment |
+| `FiskalizacijaRacuna` | fiscalizes a Fiskalizacija 1.0 invoice and prints the JIR, ZKI and QR link; also needs `FISK_OZN_POS_PR` |
 
 Each takes the path to an eRačun as an optional argument. Without it they use `primjer-eracun.xml` with the OIB
 from `FISK_OIB`, a new invoice number and today's date. The fiscalization examples need the same variables as the

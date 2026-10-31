@@ -24,6 +24,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   and the HR CIUS rules. `Iznosi.izracunaj` computes line, VAT breakdown and document totals from `StavkaRacuna`
   lines by the EN 16931 rules (VAT per category and rate on the summed base, rounded half up to the cent).
 - `Builder.proxy` for a forward proxy and `Builder.potpisnikOdgovora` to choose which certificate may sign responses.
+- Fiskalizacija 1.0 (B2C) in the `dev.mmatokovic.fiskalizacija.b2c` package, following technical specification v2.7:
+  `B2cClient` fiscalizes invoices (`racun`, returns the JIR), changes payment data (`promijeniPodatkeRacuna`,
+  `promijeniNacPlac`), reports tips (`napojnica`), manages business premises working hours (`prijaviRadnoVrijeme`,
+  `obrisiRadnoVrijeme`, `dohvatiRadnoVrijeme`, `prijaviRadnoVrijemeZaPoslovnice`) and supports `provjera` and `echo`.
+  Requests are signed with RSA-SHA256 and validated against the f73 schema; responses must be signed by
+  `fiskalcis`/`fiskalcistest`. `Zki` computes the ZKI and `QrKod` the link for the QR code on the invoice.
+- The default response signer check reads the OIB from the certificate's organizationIdentifier, which it previously
+  saw only hex-encoded.
 - `datumVrijemeSlanja` is always written in Europe/Zagreb time. A SOAP Fault's `faultstring` is part of the
   `FiskalizacijaException` message. `Rezultat.toString()` leaves out the raw SOAP messages.
 - Only KPD (`CG`) item classifications are read from UBL, VAT total BT-110 is taken from the tax total in the document

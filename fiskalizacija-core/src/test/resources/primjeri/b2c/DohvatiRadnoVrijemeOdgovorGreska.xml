@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tehnička specifikacija za korisnike v2.7, primjer 9.45 (odgovor za dohvat radnog vremena s greškom), bez potpisa; IdPoruke zamjenjuju testovi -->
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"><soapenv:Header/><soapenv:Body>
+<fis:DohvatiRadnoVrijemeOdgovor xmlns:fis="http://www.apis-it.hr/fin/2012/types/f73" Id="G0x7f4b3ce3b6d0-5D">
+<fis:Zaglavlje><fis:IdPoruke>ID_PORUKE</fis:IdPoruke><fis:DatumVrijeme>08.12.2025T13:37:19</fis:DatumVrijeme></fis:Zaglavlje>
+<fis:PoslovniProstor><fis:Oib>02994650199</fis:Oib><fis:OznPosPr>0306</fis:OznPosPr><fis:RadnoVrijeme/></fis:PoslovniProstor>
+<fis:Greske><fis:Greska><fis:SifraGreske>s110</fis:SifraGreske><fis:PorukaGreske>Radno vrijeme REDOVNO ne postoji.</fis:PorukaGreske></fis:Greska></fis:Greske>
+</fis:DohvatiRadnoVrijemeOdgovor></soapenv:Body></soapenv:Envelope>

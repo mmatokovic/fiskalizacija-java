@@ -240,7 +240,7 @@ public final class Zahtjevi {
         return new Zahtjev(doc, zahtjev, id);
     }
 
-    private static Element dodaj(Element roditelj, String ns, String ime) {
+    static Element dodaj(Element roditelj, String ns, String ime) {
         var el = roditelj.getOwnerDocument().createElementNS(ns, ime);
         roditelj.appendChild(el);
         return el;
@@ -254,7 +254,7 @@ public final class Zahtjevi {
         dodaj(roditelj, roditelj.getNamespaceURI(), ime).setTextContent(s);
     }
 
-    private static BigDecimal iznos(BigDecimal v) {
+    static BigDecimal iznos(BigDecimal v) {
         if (v == null) {
             return null;
         }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tehnička specifikacija za korisnike v2.7, primjer 2.8.1.2 (prijava radnih vremena poslovnog prostora). U primjeru je OibOper unutar PoslovniProstor, a XSD ga traži iza njega. -->
+<PrijaviRadnoVrijemeZahtjev xmlns="http://www.apis-it.hr/fin/2012/types/f73">
+  <Zaglavlje>
+    <IdPoruke>123e4567-e89b-12d3-a456-426614174000</IdPoruke>
+    <DatumVrijeme>23.06.2025T14:45:00</DatumVrijeme>
+  </Zaglavlje>
+  <PoslovniProstor>
+    <Oib>12345678901</Oib>
+    <OznPosPr>POS001</OznPosPr>
+    <RadnoVrijeme>
+      <Redovno>
+        <DatumOd>24.06.2025</DatumOd>
+        <Napomena>Standardno radno vrijeme</Napomena>
+        <Jednokratno>
+          <DanUTjednu>1</DanUTjednu>
+          <RadnoVrijemeOd>08:00</RadnoVrijemeOd>
+          <RadnoVrijemeDo>16:00</RadnoVrijemeDo>
+        </Jednokratno>
+      </Redovno>
+      <Iznimke>
+        <Datum>25.12.2025</Datum>
+        <Jednokratno>
+          <RadnoVrijemeOd>10:00</RadnoVrijemeOd>
+          <RadnoVrijemeDo>14:00</RadnoVrijemeDo>
+        </Jednokratno>
+      </Iznimke>
+    </RadnoVrijeme>
+    <OibOper>10987654321</OibOper>
+  </PoslovniProstor>
+</PrijaviRadnoVrijemeZahtjev>
