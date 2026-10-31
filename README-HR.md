@@ -141,6 +141,7 @@ Ove odluke treba potvrditi na testnom okruženju:
 |---|---|
 | `fiskalizacija-core` | fiskalizacijske poruke i eIzvještavanje, čitanje UBL-a, potpis; samo JDK |
 | `fiskalizacija-eracun` | validacija eRačuna prema UBL XSD-u, EN 16931 i HR CIUS pravilima (koristi phax ph-ubl i phive-rules); u izradi, još se ne objavljuje |
+| `fiskalizacija-examples` | pokretljivi primjeri; ne objavljuje se |
 
 `fiskalizacija-core` je JPMS modul `dev.mmatokovic.fiskalizacija`. Javni API su paketi `dev.mmatokovic.fiskalizacija` i
 `dev.mmatokovic.fiskalizacija.model`; paket `dev.mmatokovic.fiskalizacija.internal` modul ne izvozi i mijenja se bez najave.
@@ -170,6 +171,25 @@ FISK_P12=/putanja/demo.p12 FISK_P12_LOZINKA=... FISK_OIB=... ./mvnw verify -Dit.
 
 ```powershell
 $env:FISK_P12='C:\putanja\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB='...'; .\mvnw.cmd verify "-Dit.test=PoreznaTestnoOkruzenjeIT"
+```
+
+## Primjeri
+
+`fiskalizacija-examples` sadrži pokretljive programe u paketu `dev.mmatokovic.fiskalizacija.primjeri`:
+
+| Klasa | Što radi |
+|---|---|
+| `ValidacijaERacuna` | validira eRačun prema UBL XSD-u, EN 16931 i HR CIUS-u; ne treba certifikat |
+| `EvidentiranjeERacuna` | validira izlazni eRačun i fiskalizira ga na testnom okruženju |
+| `EvidentiranjeNaplate` | fiskalizira izlazni eRačun pa njegovu naplatu |
+
+Svaki prima putanju do eRačuna kao neobvezan argument. Bez nje koriste `primjer-eracun.xml` s OIB-om iz
+`FISK_OIB`, novim brojem računa i današnjim datumom. Primjeri fiskalizacije trebaju iste varijable kao testno
+okruženje iznad.
+
+```bash
+./mvnw install -DskipTests
+./mvnw -pl fiskalizacija-examples exec:java -Dexec.mainClass=dev.mmatokovic.fiskalizacija.primjeri.ValidacijaERacuna
 ```
 
 Za doprinos vidi [CONTRIBUTING.md](CONTRIBUTING.md), a za prijavu ranjivosti [SECURITY.md](SECURITY.md) (oboje na engleskom).

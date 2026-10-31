@@ -146,6 +146,7 @@ These choices need confirming on the test environment:
 |---|---|
 | `fiskalizacija-core` | fiscalization and eIzvještavanje messages, UBL parsing, signing; JDK only |
 | `fiskalizacija-eracun` | eRačun validation against UBL XSD, EN 16931 and HR CIUS rules (uses phax ph-ubl and phive-rules); in progress, not published yet |
+| `fiskalizacija-examples` | runnable examples; not published |
 
 `fiskalizacija-core` is the JPMS module `dev.mmatokovic.fiskalizacija`. The public API is the
 `dev.mmatokovic.fiskalizacija` and `dev.mmatokovic.fiskalizacija.model` packages; the module does not export
@@ -176,6 +177,25 @@ FISK_P12=/path/demo.p12 FISK_P12_LOZINKA=... FISK_OIB=... ./mvnw verify -Dit.tes
 
 ```powershell
 $env:FISK_P12='C:\path\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB='...'; .\mvnw.cmd verify "-Dit.test=PoreznaTestnoOkruzenjeIT"
+```
+
+## Examples
+
+`fiskalizacija-examples` has runnable programs in `dev.mmatokovic.fiskalizacija.primjeri`:
+
+| Class | What it does |
+|---|---|
+| `ValidacijaERacuna` | validates an eRačun against UBL XSD, EN 16931 and HR CIUS; needs no certificate |
+| `EvidentiranjeERacuna` | validates an issued eRačun and fiscalizes it on the test environment |
+| `EvidentiranjeNaplate` | fiscalizes an issued eRačun, then its payment |
+
+Each takes the path to an eRačun as an optional argument. Without it they use `primjer-eracun.xml` with the OIB
+from `FISK_OIB`, a new invoice number and today's date. The fiscalization examples need the same variables as the
+test environment above.
+
+```bash
+./mvnw install -DskipTests
+./mvnw -pl fiskalizacija-examples exec:java -Dexec.mainClass=dev.mmatokovic.fiskalizacija.primjeri.ValidacijaERacuna
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute and [SECURITY.md](SECURITY.md) to report a vulnerability.
