@@ -156,6 +156,31 @@ All operations of the specification are supported:
 | `provjera` | checks an invoice without recording it; test environment only |
 | `echo` | checks that the service is up |
 
+## Spring Boot
+
+`fiskalizacija-spring-boot-starter` configures `B2bClient` and `B2cClient` as beans in Spring Boot 4:
+
+```xml
+<dependency>
+    <groupId>dev.mmatokovic.fiskalizacija</groupId>
+    <artifactId>fiskalizacija-spring-boot-starter</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+```yaml
+fiskalizacija:
+  okruzenje: TEST                 # or PRODUKCIJA; without it nothing is configured
+  certifikat: file:/etc/fina/app.p12
+  lozinka: ${FISK_P12_LOZINKA}
+  b2c:
+    timeout: 3s
+```
+
+Other settings are `xsd-validacija`, and `adresa` and `timeout` under `b2b` and `b2c`. For a key from an HSM or a
+vault, define your own `Potpisivac` bean instead of `certifikat`. A `B2bClientCustomizer` or `B2cClientCustomizer`
+bean sets the rest of the builder, e.g. a proxy; your own `B2bClient` or `B2cClient` bean replaces the configured one.
+
 ## Open questions
 
 The choices below follow the technical specifications; they still need confirming on the test environment:
@@ -184,7 +209,6 @@ Porezna's TLS certificate), never elsewhere in the subject, part of which the ce
 
 ## Not done yet
 
-- Spring Boot 4 starter (`fiskalizacija-spring-boot-starter`)
 - `OvlastenjaFiskalizacije` (fetching authorisations)
 - Publishing to Maven Central
 
@@ -199,6 +223,7 @@ have, e.g. from your ERP or information intermediary. This may come later.
 |---|---|
 | `fiskalizacija-core` | Fiskalizacija 2.0 and 1.0 messages, UBL parsing, signing; JDK only |
 | `fiskalizacija-eracun` | eRačun validation against UBL XSD, EN 16931 and HR CIUS rules (uses phax phive-rules), and invoice totals by EN 16931; not published yet |
+| `fiskalizacija-spring-boot-starter` | Spring Boot 4 auto-configuration of `B2bClient` and `B2cClient` |
 | `fiskalizacija-examples` | runnable examples; not published |
 
 `fiskalizacija-core` is the JPMS module `dev.mmatokovic.fiskalizacija`. The public API is three packages:

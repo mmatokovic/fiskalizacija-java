@@ -32,6 +32,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   `obrisiRadnoVrijeme`, `dohvatiRadnoVrijeme`, `prijaviRadnoVrijemeZaPoslovnice`) and supports `provjera` and `echo`.
   Requests are signed with RSA-SHA256 and validated against the f73 schema; responses must be signed by
   `fiskalcis`/`fiskalcistest`. `Zki` computes the ZKI and `QrKod` the link for the QR code on the invoice.
+- `fiskalizacija-spring-boot-starter`: Spring Boot 4 auto-configuration of `Potpisivac`, `B2bClient` and `B2cClient`
+  from `fiskalizacija.*` properties, with `B2bClientCustomizer` and `B2cClientCustomizer`.
 - The default response signer check accepts the OIB only in the subject's organizationIdentifier or serialNumber,
   where FINA puts it, and no longer anywhere in the subject text.
 - XAdES signing is no longer public API (`Potpisivac.potpisi` removed); its signing time follows the client's `sat`.

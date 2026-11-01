@@ -3,7 +3,7 @@
    * Don't use comments to explain the obvious.
    * Use self-explanatory names.
 * `fiskalizacija-core` depends on the JDK only. Keep it that way.
-* The public API is `dev.mmatokovic.fiskalizacija` (shared by both), `dev.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0) and `dev.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0). Everything else goes in `dev.mmatokovic.fiskalizacija.internal`, split by concern: `xml`, `potpis`, `http`, `b2b`, `b2c`. Never make something public that isn't needed outside the module.
+* The public API is `dev.mmatokovic.fiskalizacija` (shared by both), `dev.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0) and `dev.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0). `fiskalizacija-spring-boot-starter` adds `dev.mmatokovic.fiskalizacija.spring`. Everything else goes in `dev.mmatokovic.fiskalizacija.internal`, split by concern: `xml`, `potpis`, `http`, `b2b`, `b2c`. Never make something public that isn't needed outside the module.
 * Work from the official sources only, not from other implementations: porezna.gov.hr (technical specifications, XSD schemas, examples), web.dzs.hr (KPD classification), ec.europa.eu (EN 16931, eInvoicing) and narodne-novine.nn.hr (Zakon o fiskalizaciji, pravilnici).
 * Domain names are Croatian and follow the official XSD schemas and specification (`Racun`, `evidentirajERacun`). Don't translate them, and use standard Croatian (`obvezan`, not `obavezan`).
 * Write javadoc only where it adds information the signature doesn't already give.

@@ -151,6 +151,31 @@ Podržane su sve operacije iz specifikacije:
 | `provjera` | provjerava račun bez evidentiranja; samo testno okruženje |
 | `echo` | provjerava je li servis dostupan |
 
+## Spring Boot
+
+`fiskalizacija-spring-boot-starter` konfigurira `B2bClient` i `B2cClient` kao beanove u Spring Bootu 4:
+
+```xml
+<dependency>
+    <groupId>dev.mmatokovic.fiskalizacija</groupId>
+    <artifactId>fiskalizacija-spring-boot-starter</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+```yaml
+fiskalizacija:
+  okruzenje: TEST                 # ili PRODUKCIJA; bez njega se ništa ne konfigurira
+  certifikat: file:/etc/fina/app.p12
+  lozinka: ${FISK_P12_LOZINKA}
+  b2c:
+    timeout: 3s
+```
+
+Ostale postavke su `xsd-validacija` te `adresa` i `timeout` pod `b2b` i `b2c`. Za ključ iz HSM-a ili trezora
+definirajte vlastiti `Potpisivac` bean umjesto `certifikat`. Bean `B2bClientCustomizer` ili `B2cClientCustomizer`
+postavlja ostatak buildera, npr. proxy; vlastiti `B2bClient` ili `B2cClient` bean zamjenjuje konfigurirani.
+
 ## Otvorena pitanja
 
 Ovi izbori prate tehničke specifikacije, ali ih još treba potvrditi na testnom okruženju:
@@ -179,7 +204,6 @@ FINA upisuje: u organizationIdentifier (`HR02994650199` u `fiskalcistest`) ili u
 
 ## Što još nije napravljeno
 
-- Spring Boot 4 starter (`fiskalizacija-spring-boot-starter`)
 - `OvlastenjaFiskalizacije` (dohvat ovlaštenja)
 - Objava na Maven Central
 
@@ -194,6 +218,7 @@ ili od informacijskog posrednika. Možda dođe kasnije.
 |---|---|
 | `fiskalizacija-core` | poruke Fiskalizacije 2.0 i 1.0, čitanje UBL-a, potpis; samo JDK |
 | `fiskalizacija-eracun` | validacija eRačuna prema UBL XSD-u, EN 16931 i HR CIUS pravilima (koristi phax phive-rules) i izračun iznosa računa po EN 16931; još se ne objavljuje |
+| `fiskalizacija-spring-boot-starter` | Spring Boot 4 auto-konfiguracija za `B2bClient` i `B2cClient` |
 | `fiskalizacija-examples` | pokretljivi primjeri; ne objavljuje se |
 
 `fiskalizacija-core` je JPMS modul `dev.mmatokovic.fiskalizacija`. Javni API su tri paketa:
