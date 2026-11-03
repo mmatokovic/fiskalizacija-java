@@ -22,8 +22,9 @@ The library follows the official sources, which are the documentation for its de
 ## Rules
 
 - `fiskalizacija-core` must have no external dependencies, only the JDK.
-- The public API is `dev.mmatokovic.fiskalizacija` (shared), `dev.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0) and `dev.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0). Everything else goes in
-  `dev.mmatokovic.fiskalizacija.internal`, which `module-info.java` does not export.
+- The public API is `dev.mmatokovic.fiskalizacija` (shared), `dev.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0) and `dev.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0); `fiskalizacija-spring-boot-starter` adds
+  `dev.mmatokovic.fiskalizacija.spring`. Everything else goes in `dev.mmatokovic.fiskalizacija.internal`, which
+  `module-info.java` does not export.
 - Write javadoc where it tells the reader something the signature does not. Doclint checks syntax and references.
 - Domain names (classes, fields, methods) stay in Croatian and follow the official XSD and specification terms.
 - Every behaviour change comes with a test, preferably against an official Porezna uprava example in

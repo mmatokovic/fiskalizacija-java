@@ -14,7 +14,7 @@ eRačun (e-invoices) and eIzvještavanje (e-reporting), and **Fiskalizacija 1.0 
 - Fiskalizacija 1.0 (B2C): invoices with ZKI and JIR, QR code link, payment data changes, tips and business premises working hours (technical specification v2.7)
 - XAdES-B request signing and response signature verification, including the chain up to the FINA CA
 - Validation against the official XSD schemas before sending, OIB check digit when reading UBL
-- **No external dependencies**: only JDK 17+ (`java.xml`, `java.xml.crypto`, `java.net.http`)
+- **No external dependencies** in `fiskalizacija-core`: only JDK 17+ (`java.xml`, `java.xml.crypto`, `java.net.http`)
 
 > Status: 0.1.0-SNAPSHOT. Tested against the official Porezna uprava examples, **not yet tested against the
 > Porezna uprava test environment** (see [Open questions](#open-questions)). Tests for the test environment exist,
@@ -171,15 +171,14 @@ All operations of the specification are supported:
 ```yaml
 fiskalizacija:
   okruzenje: TEST                 # or PRODUKCIJA; without it nothing is configured
-  certifikat: file:/etc/fina/app.p12
+  certifikat: /etc/fina/app.p12   # or classpath:app.p12
   lozinka: ${FISK_P12_LOZINKA}
-  b2c:
-    timeout: 3s
 ```
 
-Other settings are `xsd-validacija`, and `adresa` and `timeout` under `b2b` and `b2c`. For a key from an HSM or a
-vault, define your own `Potpisivac` bean instead of `certifikat`. A `B2bClientCustomizer` or `B2cClientCustomizer`
-bean sets the rest of the builder, e.g. a proxy; your own `B2bClient` or `B2cClient` bean replaces the configured one.
+Other settings are `xsd-validacija`, and `adresa` and `timeout` (e.g. `30s`; a number alone is seconds) under `b2b`
+and `b2c`. For a key from an HSM or a vault, define your own `Potpisivac` bean instead of `certifikat`. A
+`B2bClientCustomizer` or `B2cClientCustomizer` bean sets the rest of the builder, e.g. a proxy, or `sslContext` for a
+gateway whose certificate is not from FINA; your own `B2bClient` or `B2cClient` bean replaces the configured one.
 
 ## Open questions
 

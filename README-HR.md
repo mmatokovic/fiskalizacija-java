@@ -14,7 +14,7 @@ eIzvještavanje, i **Fiskalizacija 1.0 (B2C)**, odnosno fiskalizacija računa u 
 - Fiskalizacija 1.0 (B2C): računi sa ZKI-jem i JIR-om, poveznica za QR kod, promjena podataka o plaćanju, napojnice i radno vrijeme poslovnog prostora (tehnička specifikacija v2.7)
 - XAdES-B potpis zahtjeva i provjera potpisa odgovora, uključujući lanac do FINA CA
 - Validacija prema službenim XSD shemama prije slanja, OIB s kontrolnom znamenkom pri čitanju UBL-a
-- **Bez vanjskih ovisnosti**: samo JDK 17+ (`java.xml`, `java.xml.crypto`, `java.net.http`)
+- **Bez vanjskih ovisnosti** u `fiskalizacija-core`: samo JDK 17+ (`java.xml`, `java.xml.crypto`, `java.net.http`)
 
 > Status: 0.1.0-SNAPSHOT. Testirano na službenim primjerima Porezne uprave, **još nije testirano protiv
 > testnog okruženja Porezne uprave** (vidi [Otvorena pitanja](#otvorena-pitanja)). Testovi za testno okruženje
@@ -166,15 +166,14 @@ Podržane su sve operacije iz specifikacije:
 ```yaml
 fiskalizacija:
   okruzenje: TEST                 # ili PRODUKCIJA; bez njega se ništa ne konfigurira
-  certifikat: file:/etc/fina/app.p12
+  certifikat: /etc/fina/app.p12   # ili classpath:app.p12
   lozinka: ${FISK_P12_LOZINKA}
-  b2c:
-    timeout: 3s
 ```
 
-Ostale postavke su `xsd-validacija` te `adresa` i `timeout` pod `b2b` i `b2c`. Za ključ iz HSM-a ili trezora
-definirajte vlastiti `Potpisivac` bean umjesto `certifikat`. Bean `B2bClientCustomizer` ili `B2cClientCustomizer`
-postavlja ostatak buildera, npr. proxy; vlastiti `B2bClient` ili `B2cClient` bean zamjenjuje konfigurirani.
+Ostale postavke su `xsd-validacija` te `adresa` i `timeout` (npr. `30s`; broj bez jedinice su sekunde) pod `b2b` i
+`b2c`. Za ključ iz HSM-a ili trezora definirajte vlastiti `Potpisivac` bean umjesto `certifikat`. Bean
+`B2bClientCustomizer` ili `B2cClientCustomizer` postavlja ostatak buildera, npr. proxy ili `sslContext` za gateway
+čiji certifikat nije od FINA-e; vlastiti `B2bClient` ili `B2cClient` bean zamjenjuje konfigurirani.
 
 ## Otvorena pitanja
 
