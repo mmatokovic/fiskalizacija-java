@@ -40,7 +40,12 @@ public record Postavke(
     }
 
     public Postavke adresa(URI adresa) {
-        return new Postavke(Objects.requireNonNull(adresa, "adresa"), sidra, posrednici, ssl, timeout, xsdValidacija, sat,
+        Objects.requireNonNull(adresa, "adresa");
+        if (!("http".equalsIgnoreCase(adresa.getScheme()) || "https".equalsIgnoreCase(adresa.getScheme()))
+                || adresa.getHost() == null) {
+            throw new IllegalArgumentException("adresa mora biti http ili https URI s hostom: " + adresa);
+        }
+        return new Postavke(adresa, sidra, posrednici, ssl, timeout, xsdValidacija, sat,
                 potpisnikOdgovora, proxy);
     }
 

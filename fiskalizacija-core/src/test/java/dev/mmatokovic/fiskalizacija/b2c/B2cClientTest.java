@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class B2cClientTest {
 
@@ -186,6 +187,26 @@ class B2cClientTest {
         assertThatThrownBy(() -> client().racun(osnovniRacun().build()))
                 .isInstanceOf(FiskalizacijaException.class)
                 .hasMessageContaining("Interna greska");
+    }
+
+    @Test
+    void adresaBezShemeIliHostaNijeDopustena() {
+        var builder = B2cClient.builder(Okruzenje.TEST, potpisivac);
+        for (var adresa : List.of("gateway.example/fiskalizacija", "ftp://gateway.example/", "https:///fiskalizacija")) {
+            assertThatThrownBy(() -> builder.adresa(URI.create(adresa)))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining(adresa);
+        }
+    }
+
+    @Test
+    void zatvorenKlijentNeSalje() {
+        assumeTrue(Runtime.version().feature() >= 21, "HttpClient je AutoCloseable od JDK 21");
+        var client = client();
+        client.close();
+
+        assertThatThrownBy(() -> client.echo("proba")).isInstanceOf(FiskalizacijaException.class);
+        assertThat(primljeno).isEmpty();
     }
 
     @Test

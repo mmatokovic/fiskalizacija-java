@@ -1,11 +1,14 @@
 package dev.mmatokovic.fiskalizacija.internal.xml;
 
 import org.w3c.dom.Element;
+import org.w3c.dom.ls.DOMImplementationLS;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
@@ -50,18 +53,31 @@ public final class Xsd {
     private static Schema ucitaj() {
         try {
             var sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "file,jar");
+            sf.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
             sf.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            var ls = (DOMImplementationLS) DocumentBuilderFactory.newInstance().newDocumentBuilder().getDOMImplementation();
+            // import iz classpatha, jer JAXP ne dopušta jar:nested: URL-ove Spring Boot izvršnog jara
+            sf.setResourceResolver((type, ns, publicId, systemId, baseUri) -> {
+                var in = systemId == null ? null : Xsd.class.getResourceAsStream("xsd/" + systemId);
+                if (in == null) {
+                    return null;
+                }
+                var izvor = ls.createLSInput();
+                izvor.setByteStream(in);
+                izvor.setSystemId(systemId);
+                return izvor;
+            });
             return sf.newSchema(new StreamSource[]{
-                    new StreamSource(resurs("xsd/eFiskalizacijaSchema.xsd")),
-                    new StreamSource(resurs("xsd/eIzvjestavanjeSchema.xsd")),
-                    new StreamSource(resurs("xsd/FiskalizacijaSchema.xsd"))});
-        } catch (SAXException e) {
+                    izvor("eFiskalizacijaSchema.xsd"),
+                    izvor("eIzvjestavanjeSchema.xsd"),
+                    izvor("FiskalizacijaSchema.xsd")});
+        } catch (SAXException | ParserConfigurationException e) {
             throw new IllegalStateException("Ne mogu učitati ugrađene XSD sheme", e);
         }
     }
 
-    private static String resurs(String ime) {
-        return Objects.requireNonNull(Xsd.class.getResource(ime), () -> "Nedostaje ugrađena shema " + ime).toExternalForm();
+    private static StreamSource izvor(String ime) {
+        var in = Objects.requireNonNull(Xsd.class.getResourceAsStream("xsd/" + ime), () -> "Nedostaje ugrađena shema " + ime);
+        return new StreamSource(in, ime);
     }
 }

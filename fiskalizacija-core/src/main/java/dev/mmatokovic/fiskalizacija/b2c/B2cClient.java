@@ -46,7 +46,7 @@ import java.util.function.Predicate;
  * var rezultat = client.racun(racun);
  * }</pre>
  */
-public final class B2cClient {
+public final class B2cClient implements AutoCloseable {
 
     private static final String SOAP_ACTION = "http://e-porezna.porezna-uprava.hr/fiskalizacija/2012/services/FiskalizacijaService/";
     private static final String CONTENT_TYPE = "text/xml; charset=utf-8";
@@ -59,6 +59,18 @@ public final class B2cClient {
         this.postavke = b.postavke;
         this.potpisivac = b.potpisivac;
         this.http = b.postavke.httpClient();
+    }
+
+    /** Na JDK 21+ zatvara HTTP klijent i čeka poslane zahtjeve; na JDK 17 ne radi ništa. */
+    @Override
+    public void close() {
+        if (http instanceof AutoCloseable c) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
     }
 
     /** Okruženje određuje adresu servisa i povjerljive FINA certifikate; {@code potpisivac} potpisuje zahtjeve. */

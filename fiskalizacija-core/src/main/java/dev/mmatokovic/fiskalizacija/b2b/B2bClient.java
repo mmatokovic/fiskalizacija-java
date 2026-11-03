@@ -44,7 +44,7 @@ import java.util.function.Predicate;
  * var rezultat = client.evidentirajERacun(VrstaERacuna.IZLAZNI, UblParser.racun(ublXml));
  * }</pre>
  */
-public final class B2bClient {
+public final class B2bClient implements AutoCloseable {
 
     private final Postavke postavke;
     private final Potpisivac potpisivac;
@@ -54,6 +54,18 @@ public final class B2bClient {
         this.postavke = b.postavke;
         this.potpisivac = b.potpisivac;
         this.http = b.postavke.httpClient();
+    }
+
+    /** Na JDK 21+ zatvara HTTP klijent i čeka poslane zahtjeve; na JDK 17 ne radi ništa. */
+    @Override
+    public void close() {
+        if (http instanceof AutoCloseable c) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
     }
 
     /** Okruženje određuje adresu servisa i povjerljive FINA certifikate; {@code potpisivac} potpisuje zahtjeve. */
