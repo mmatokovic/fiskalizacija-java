@@ -140,6 +140,81 @@ class B2bClientTest {
     }
 
     @Test
+    void ovlastenjaFiskalizacijeSIspravnimPotpisomOdgovora() throws Exception {
+        status = 200;
+        potpisati = "OvlastenjaFiskalizacijeOdgovor";
+        odgovor = soap("<eizv:OvlastenjaFiskalizacijeOdgovor xmlns:eizv=\"" + Zahtjevi.NS_EIZV + "\" eizv:id=\"RES-001\">"
+                + "<eizv:datumVrijemeSlanja>2026-02-06T10:15:31.0000</eizv:datumVrijemeSlanja>"
+                + "<eizv:ovlasteniOib>11111111119</eizv:ovlasteniOib><eizv:ovlasteniOib>12345678903</eizv:ovlasteniOib>"
+                + "</eizv:OvlastenjaFiskalizacijeOdgovor>");
+
+        var r = client().ovlastenjaFiskalizacije("12345678903");
+
+        assertEquals(PotpisOdgovora.ISPRAVAN, r.potpisOdgovora());
+        assertEquals(List.of("11111111119", "12345678903"), r.ovlasteniOibi());
+        assertEquals(r.soapZahtjev(), primljeno.get(0));
+        var zahtjev = (org.w3c.dom.Element) Xml.parsiraj(primljeno.get(0))
+                .getElementsByTagNameNS(Zahtjevi.NS_EIZV, "OvlastenjaFiskalizacijeZahtjev").item(0);
+        assertEquals(r.idZahtjeva(), zahtjev.getAttributeNS(Zahtjevi.NS_EIZV, "id"));
+        assertEquals("12345678903", Xml.tekst(zahtjev, "oib"));
+        assertEquals(List.of(), Xsd.greske(zahtjev));
+    }
+
+    @Test
+    void ovlastenjaFiskalizacijeBezOib() throws Exception {
+        status = 200;
+        odgovor = soap(Primjeri.tekst("/primjeri/izvjestavanje/Odgovor_OvlastenjaFiskalizacije.xml"));
+
+        client().ovlastenjaFiskalizacije();
+
+        var zahtjev = (org.w3c.dom.Element) Xml.parsiraj(primljeno.get(0))
+                .getElementsByTagNameNS(Zahtjevi.NS_EIZV, "OvlastenjaFiskalizacijeZahtjev").item(0);
+        assertNull(Xml.dijete(zahtjev, "oib"));
+        assertEquals(List.of(), Xsd.greske(zahtjev));
+    }
+
+    @Test
+    void ovlastenjaFiskalizacijeIzSluzbenogPrimjeraBezIspravnogPotpisa() {
+        status = 200;
+        odgovor = soap(Primjeri.tekst("/primjeri/izvjestavanje/Odgovor_OvlastenjaFiskalizacije.xml"));
+
+        var r = client().ovlastenjaFiskalizacije("12345678903");
+
+        assertEquals(List.of("00000000001", "00000000002", "00000000003"), r.ovlasteniOibiBezProvjerePotpisa());
+        assertEquals(PotpisOdgovora.NEISPRAVAN, r.potpisOdgovora());
+        assertThrows(IllegalStateException.class, r::ovlasteniOibi);
+    }
+
+    @Test
+    void neuspjesnaOvlastenjaFiskalizacijeIzSluzbenogPrimjeraNemajuOib() {
+        status = 200;
+        odgovor = soap(Primjeri.tekst("/primjeri/izvjestavanje/Neuspjesan_Odgovor_OvlastenjaFiskalizacije.xml"));
+
+        var r = client().ovlastenjaFiskalizacije("12345678903");
+
+        assertEquals(List.of(), r.ovlasteniOibiBezProvjerePotpisa());
+    }
+
+    @Test
+    void ovlastenjaFiskalizacijeSNeispravnimOibNeSalju() {
+        assertThrows(NeispravanZahtjevException.class, () -> client().ovlastenjaFiskalizacije("123"));
+        assertThrows(NullPointerException.class, () -> client().ovlastenjaFiskalizacije(null));
+        assertTrue(primljeno.isEmpty());
+    }
+
+    @Test
+    void ovlastenjaFiskalizacijeSoapFaultJeIznimka() {
+        status = 500;
+        odgovor = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body>"
+                + "<soapenv:Fault><faultcode>soapenv:Server</faultcode><faultstring>S006</faultstring></soapenv:Fault>"
+                + "</soapenv:Body></soapenv:Envelope>";
+
+        var e = assertThrows(FiskalizacijaException.class, () -> client().ovlastenjaFiskalizacije("12345678903"));
+
+        assertTrue(e.getMessage().contains("SOAP Fault: S006"), e.getMessage());
+    }
+
+    @Test
     void soapFaultJeIznimkaSaStatusomITijelom() {
         status = 500;
         odgovor = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body>"
@@ -458,6 +533,11 @@ class B2bClientTest {
     private String potpisanOdgovor(String element, String prihvacen) {
         potpisati = element;
         return odgovor(element, prihvacen);
+    }
+
+    private static String soap(String tijelo) {
+        return "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body>" + tijelo
+                + "</soapenv:Body></soapenv:Envelope>";
     }
 
     private static String odgovor(String element, String prihvacen) {

@@ -95,6 +95,15 @@ public final class Zahtjevi {
         return z;
     }
 
+    /** @param oib ili {@code null} za zahtjev bez OIB-a */
+    public static Zahtjev ovlastenjaFiskalizacije(String oib, Clock sat) {
+        var z = novi(NS_EIZV, "eizv", "OvlastenjaFiskalizacijeZahtjev");
+        var zaglavlje = Xml.dodaj(z.element, NS_EIZV, "eizv:Zaglavlje");
+        tekst(zaglavlje, "eizv:datumVrijemeSlanja", vrijemeSlanja(sat));
+        tekst(z.element, "eizv:oib", oib);
+        return z;
+    }
+
     private static void racun(Element roditelj, String p, Racun r, boolean eRacun) {
         var el = Xml.dodaj(roditelj, roditelj.getNamespaceURI(), p + (eRacun ? ":ERacun" : ":Racun"));
         tekst(el, p + ":brojDokumenta", r.brojDokumenta());

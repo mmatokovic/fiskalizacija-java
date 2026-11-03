@@ -9,7 +9,7 @@
 Java klijent za fiskalizaciju prema Poreznoj upravi: **Fiskalizacija 2.0 (B2B)**, odnosno evidentiranje eRačuna i
 eIzvještavanje, i **Fiskalizacija 1.0 (B2C)**, odnosno fiskalizacija računa u krajnjoj potrošnji.
 
-- Sve četiri poruke: `EvidentirajERacun` (izlazni i ulazni), `EvidentirajNaplatu`, `EvidentirajOdbijanje`, `EvidentirajIsporukuZaKojuNijeIzdanERacun`
+- Sve četiri poruke: `EvidentirajERacun` (izlazni i ulazni), `EvidentirajNaplatu`, `EvidentirajOdbijanje`, `EvidentirajIsporukuZaKojuNijeIzdanERacun`, uz `OvlastenjaFiskalizacije` (dohvat ovlaštenja)
 - Čitanje UBL 2.1 eRačuna (HR CIUS, Invoice i CreditNote, i unutar StandardBusinessDocument omotnice)
 - Fiskalizacija 1.0 (B2C): računi sa ZKI-jem i JIR-om, poveznica za QR kod, promjena podataka o plaćanju, napojnice i radno vrijeme poslovnog prostora (tehnička specifikacija v2.7)
 - XAdES-B potpis zahtjeva i provjera potpisa odgovora, uključujući lanac do FINA CA
@@ -104,6 +104,15 @@ u međuvremenu možda istekao.
 
 ```java
 PotpisOdgovora potpis = client.provjeriOdgovor(r.soapOdgovor(), r.primljeno());
+```
+
+## Ovlaštenja fiskalizacije
+
+`OvlastenjaFiskalizacije` (specifikacija 2.0, poglavlje 6) vraća ovlaštene OIB-ove za OIB, ili bez njega. Popis je
+dostupan samo uz ispravan potpis odgovora; `ovlasteniOibiBezProvjerePotpisa()` ga daje bez obzira na potpis.
+
+```java
+List<String> ovlasteni = client.ovlastenjaFiskalizacije("12345678903").ovlasteniOibi();
 ```
 
 ## Ulazni eRačuni
@@ -207,6 +216,9 @@ Ovi izbori prate tehničke specifikacije, ali ih još treba potvrditi na testnom
    reference unutar dokumenta, popis dopuštenih algoritama i transformacija, RSA ključ od najmanje 2048 bita i EC
    ključ od najmanje 256.
 7. B2C `prijaviRadnoVrijeme` šalje se sa SOAPAction od `promijeniPodatkeRacuna`, kao u službenom WSDL-u v1.10.
+8. `OvlastenjaFiskalizacije`: specifikacija ne kaže čija su ovlaštenja na popisu ni što vraća zahtjev bez `oib`.
+   Njezin primjer neuspješnog odgovora ima prazan `ovlasteniOib` i nema šifru greške, što XSD ne dopušta; takav
+   odgovor daje praznu listu, a SOAP Fault je `FiskalizacijaException`.
 
 Svaki porezni obveznik ima FINA certifikat, pa ispravan lanac sam nije dovoljan. OIB se priznaje samo tamo gdje ga
 FINA upisuje: u organizationIdentifier (`HR02994650199` u `fiskalcistest`) ili u serialNumber
@@ -214,7 +226,6 @@ FINA upisuje: u organizationIdentifier (`HR02994650199` u `fiskalcistest`) ili u
 
 ## Što još nije napravljeno
 
-- `OvlastenjaFiskalizacije` (dohvat ovlaštenja)
 - Objava na Maven Central
 
 ## Zasad izvan opsega

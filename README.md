@@ -9,7 +9,7 @@
 Java client for Croatian fiscalization to Porezna uprava, the Croatian Tax Administration: **Fiskalizacija 2.0 (B2B)**
 eRačun (e-invoices) and eIzvještavanje (e-reporting), and **Fiskalizacija 1.0 (B2C)** invoices to consumers.
 
-- All four messages: `EvidentirajERacun` (issued and received), `EvidentirajNaplatu`, `EvidentirajOdbijanje`, `EvidentirajIsporukuZaKojuNijeIzdanERacun`
+- All four messages: `EvidentirajERacun` (issued and received), `EvidentirajNaplatu`, `EvidentirajOdbijanje`, `EvidentirajIsporukuZaKojuNijeIzdanERacun`, plus `OvlastenjaFiskalizacije` (fetching authorisations)
 - Reads UBL 2.1 eRačun (HR CIUS, Invoice and CreditNote, also inside a StandardBusinessDocument envelope)
 - Fiskalizacija 1.0 (B2C): invoices with ZKI and JIR, QR code link, payment data changes, tips and business premises working hours (technical specification v2.7)
 - XAdES-B request signing and response signature verification, including the chain up to the FINA CA
@@ -108,6 +108,15 @@ received, because the Porezna certificate may have expired since.
 
 ```java
 PotpisOdgovora potpis = client.provjeriOdgovor(r.soapOdgovor(), r.primljeno());
+```
+
+## Fiscalization authorisations
+
+`OvlastenjaFiskalizacije` (specification 2.0, chapter 6) returns the authorised OIBs for an OIB, or without one. The
+list is available only with a valid response signature; `ovlasteniOibiBezProvjerePotpisa()` gives it regardless.
+
+```java
+List<String> ovlasteni = client.ovlastenjaFiskalizacije("12345678903").ovlasteniOibi();
 ```
 
 ## Received eRačun
@@ -212,6 +221,9 @@ The choices below follow the technical specifications; they still need confirmin
    same-document references only, an allow-list of algorithms and transforms, RSA keys of at least 2048 bits and EC
    keys of at least 256.
 7. B2C `prijaviRadnoVrijeme` is sent with the SOAPAction of `promijeniPodatkeRacuna`, as in the official WSDL v1.10.
+8. `OvlastenjaFiskalizacije`: the specification does not say whose authorisations the list holds or what a request
+   without `oib` returns. Its failed response example has an empty `ovlasteniOib` and no error code, which the XSD
+   does not allow; such a response gives an empty list, and a SOAP Fault is a `FiskalizacijaException`.
 
 Every taxpayer has a FINA certificate, so a valid chain alone is not enough. The OIB counts only where FINA puts it:
 in organizationIdentifier (`HR02994650199` in `fiskalcistest`) or in serialNumber (`VATHR-18683136487.341` in
@@ -219,7 +231,6 @@ Porezna's TLS certificate), never elsewhere in the subject, part of which the ce
 
 ## Not done yet
 
-- `OvlastenjaFiskalizacije` (fetching authorisations)
 - Publishing to Maven Central
 
 ## Out of scope for now

@@ -165,6 +165,40 @@ public final class B2bClient implements AutoCloseable {
     }
 
     /**
+     * Šalje {@code OvlastenjaFiskalizacijeZahtjev} bez OIB-a.
+     *
+     * @see #ovlastenjaFiskalizacije(String)
+     */
+    public OvlastenjaFiskalizacije ovlastenjaFiskalizacije() {
+        return ovlastenja(null);
+    }
+
+    /**
+     * Šalje {@code OvlastenjaFiskalizacijeZahtjev} za OIB.
+     *
+     * @param oib OIB za koji se šalje zahtjev
+     * @return ovlašteni OIB-ovi iz odgovora
+     * @throws NeispravanZahtjevException ako poruka ne prolazi XSD shemu, npr. OIB nema 11 znamenki; ništa se ne šalje
+     * @throws FiskalizacijaException     ako poziv ne uspije ili odgovor nije valjan
+     */
+    public OvlastenjaFiskalizacije ovlastenjaFiskalizacije(String oib) {
+        return ovlastenja(Objects.requireNonNull(oib, "oib"));
+    }
+
+    private OvlastenjaFiskalizacije ovlastenja(String oib) {
+        var zahtjev = pripremi(Zahtjevi.ovlastenjaFiskalizacije(oib, postavke.sat()), "OvlastenjaFiskalizacijeOdgovor");
+        var odgovor = SoapPoziv.posalji(http, postavke.adresa(), postavke.timeout(), "text/xml; charset=utf-8", "", zahtjev.soap());
+        Instant primljeno = postavke.sat().instant();
+        var odgovorEl = odgovorElement(zahtjev.odgovorElement(), odgovor.status(), odgovor.tijelo());
+        var oibi = Xml.djeca(odgovorEl, "ovlasteniOib").stream()
+                .map(e -> e.getTextContent().strip())
+                .filter(t -> !t.isEmpty())
+                .toList();
+        return new OvlastenjaFiskalizacije(zahtjev.idZahtjeva(), oibi, postavke.provjeriPotpis(odgovorEl, null),
+                odgovor.status(), zahtjev.soap(), odgovor.tijelo(), primljeno);
+    }
+
+    /**
      * Potpisuje i validira {@code EvidentirajERacunZahtjev} bez slanja, npr. za slanje vlastitim HTTP klijentom.
      *
      * @throws NeispravanZahtjevException ako poruka ne prolazi XSD shemu
@@ -217,7 +251,27 @@ public final class B2bClient implements AutoCloseable {
      */
     public Rezultat obradiOdgovor(PripremljeniZahtjev zahtjev, int httpStatus, String soapOdgovor) {
         Instant primljeno = postavke.sat().instant();
-        String odgovorElement = zahtjev.odgovorElement();
+        var odgovorEl = odgovorElement(zahtjev.odgovorElement(), httpStatus, soapOdgovor);
+        Odgovor o;
+        try {
+            o = odgovor(odgovorEl);
+        } catch (NumberFormatException e) {
+            throw new FiskalizacijaException("Neispravan redniBrojZapisa u odgovoru (HTTP " + httpStatus + ")",
+                    httpStatus, soapOdgovor, e);
+        }
+        if (o == null) {
+            throw new FiskalizacijaException(zahtjev.odgovorElement() + " ne sadrži element Odgovor (HTTP " + httpStatus + ")",
+                    httpStatus, soapOdgovor, null);
+        }
+        if (o.idZahtjeva() == null) {
+            throw new FiskalizacijaException("Odgovor nema idZahtjeva (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
+        }
+        return new Rezultat(zahtjev.idZahtjeva(), o,
+                postavke.provjeriPotpis(odgovorEl, null), httpStatus,
+                zahtjev.soap(), soapOdgovor, primljeno);
+    }
+
+    private static Element odgovorElement(String odgovorElement, int httpStatus, String soapOdgovor) {
         Document dokument;
         try {
             dokument = Xml.parsiraj(soapOdgovor);
@@ -236,24 +290,7 @@ public final class B2bClient implements AutoCloseable {
             throw new FiskalizacijaException("Odgovor mora sadržavati točno jedan " + odgovorElement + ", a sadrži "
                     + el.getLength() + " (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
         }
-        var odgovorEl = (Element) el.item(0);
-        Odgovor o;
-        try {
-            o = odgovor(odgovorEl);
-        } catch (NumberFormatException e) {
-            throw new FiskalizacijaException("Neispravan redniBrojZapisa u odgovoru (HTTP " + httpStatus + ")",
-                    httpStatus, soapOdgovor, e);
-        }
-        if (o == null) {
-            throw new FiskalizacijaException(odgovorElement + " ne sadrži element Odgovor (HTTP " + httpStatus + ")",
-                    httpStatus, soapOdgovor, null);
-        }
-        if (o.idZahtjeva() == null) {
-            throw new FiskalizacijaException("Odgovor nema idZahtjeva (HTTP " + httpStatus + ")", httpStatus, soapOdgovor, null);
-        }
-        return new Rezultat(zahtjev.idZahtjeva(), o,
-                postavke.provjeriPotpis(odgovorEl, null), httpStatus,
-                zahtjev.soap(), soapOdgovor, primljeno);
+        return (Element) el.item(0);
     }
 
     /**

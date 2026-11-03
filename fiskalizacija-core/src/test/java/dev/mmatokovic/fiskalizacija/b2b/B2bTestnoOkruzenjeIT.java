@@ -66,6 +66,14 @@ class B2bTestnoOkruzenjeIT {
         prihvacen(client.evidentirajIsporukuZaKojuNijeIzdanERacun(racun(oib, DRUGA_STRANA)));
     }
 
+    @Test
+    void ovlastenjaFiskalizacije() {
+        var r = client.ovlastenjaFiskalizacije(oib);
+
+        assertEquals(PotpisOdgovora.ISPRAVAN, r.potpisOdgovora(), r::soapOdgovor);
+        assertTrue(r.ovlasteniOibi().stream().allMatch(Oib::ispravan), r::soapOdgovor);
+    }
+
     /** Službeni primjer s jedinstvenim brojem, današnjim datumom i zadanim OIB-ima prodavatelja (i operatera) i kupca. */
     private static Racun racun(String prodavatelj, String kupac) {
         String broj = Math.floorMod(UUID.randomUUID().getMostSignificantBits(), 1_000_000_000L) + "-P1-1";
