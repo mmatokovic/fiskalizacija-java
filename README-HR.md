@@ -175,6 +175,17 @@ Ostale postavke su `xsd-validacija` te `adresa` i `timeout` (npr. `30s`; broj be
 `B2bClientCustomizer` ili `B2cClientCustomizer` postavlja ostatak buildera, npr. proxy ili `sslContext` za gateway
 čiji certifikat nije od FINA-e; vlastiti `B2bClient` ili `B2cClient` bean zamjenjuje konfigurirani.
 
+## Testne okoline
+
+Klijent poziva samo SOAP servise iz `Okruzenje.TEST`. Porezna uz njih nudi i dva web portala:
+
+- [LIPO](https://porezna.gov.hr/fiskalizacija/bezgotovinski-racuni/bezgotovinski-racuni-novosti/o/u-produkciji-web-aplikacija-lipo)
+  (Lista identifikatora poreznih obveznika) ima testnu okolinu `https://fiskalizacija-test.porezna-uprava.hr`, u kojoj
+  OIB `02994650199` prikazuje testni skup podataka.
+- [Portal za testiranje sukladnosti](https://porezna.gov.hr/fiskalizacija/bezgotovinski-racuni/bezgotovinski-racuni-novosti/o/pokrenut-portal-za-testiranje)
+  (`https://pts.porezna-uprava.hr/`) namijenjen je pristupnim točkama i nudi opcionalne testne scenarije za razmjenu
+  eRačuna, fiskalizaciju i MPS. Pristup se dodjeljuje kroz ePoreznu.
+
 ## Otvorena pitanja
 
 Ovi izbori prate tehničke specifikacije, ali ih još treba potvrditi na testnom okruženju:

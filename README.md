@@ -180,6 +180,17 @@ and `b2c`. For a key from an HSM or a vault, define your own `Potpisivac` bean i
 `B2bClientCustomizer` or `B2cClientCustomizer` bean sets the rest of the builder, e.g. a proxy, or `sslContext` for a
 gateway whose certificate is not from FINA; your own `B2bClient` or `B2cClient` bean replaces the configured one.
 
+## Test environments
+
+The client only calls the SOAP services in `Okruzenje.TEST`. Porezna also runs two web portals:
+
+- [LIPO](https://porezna.gov.hr/fiskalizacija/bezgotovinski-racuni/bezgotovinski-racuni-novosti/o/u-produkciji-web-aplikacija-lipo)
+  (Lista identifikatora poreznih obveznika) has a test environment at `https://fiskalizacija-test.porezna-uprava.hr`,
+  where OIB `02994650199` shows a test data set.
+- The [conformance testing portal](https://porezna.gov.hr/fiskalizacija/bezgotovinski-racuni/bezgotovinski-racuni-novosti/o/pokrenut-portal-za-testiranje)
+  (`https://pts.porezna-uprava.hr/`) is meant for access points and offers optional test scenarios for eRačun
+  exchange, fiscalization and MPS. Access is granted through ePorezna.
+
 ## Open questions
 
 The choices below follow the technical specifications; they still need confirming on the test environment:
