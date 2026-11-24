@@ -59,7 +59,7 @@
         <assertj.version>3.27.7</assertj.version>
         <mockwebserver.version>5.5.1</mockwebserver.version>
         <phive-rules.version>4.7.1</phive-rules.version>
-        <spring-boot.version>4.1.2</spring-boot.version>
+        <spring-boot.version>4.2.0</spring-boot.version>
     </properties>
 
     <dependencyManagement>
