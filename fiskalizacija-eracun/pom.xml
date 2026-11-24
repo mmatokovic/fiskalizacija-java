@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>fiskalizacija-eracun</artifactId>
+    <name>fiskalizacija-eracun</name>
     <description>UBL 2.1 eRačun po HR CIUS-u: validacija i izračun iznosa</description>
 
     <dependencies>

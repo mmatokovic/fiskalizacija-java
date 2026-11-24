@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>fiskalizacija-spring-boot-starter</artifactId>
+    <name>fiskalizacija-spring-boot-starter</name>
     <description>Spring Boot 4 auto-konfiguracija za B2bClient i B2cClient</description>
 
     <dependencies>

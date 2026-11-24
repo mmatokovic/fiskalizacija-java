@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>fiskalizacija-core</artifactId>
+    <name>fiskalizacija-core</name>
     <description>Klijent bez vanjskih ovisnosti: samo JDK (java.xml, java.xml.crypto, java.net.http)</description>
 
     <dependencies>

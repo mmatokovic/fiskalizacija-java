@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>fiskalizacija-examples</artifactId>
+    <name>fiskalizacija-examples</name>
     <description>Pokretljivi primjeri korištenja; ne objavljuje se</description>
 
     <properties>
