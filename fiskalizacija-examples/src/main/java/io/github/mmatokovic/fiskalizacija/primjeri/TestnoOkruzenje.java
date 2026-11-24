@@ -1,0 +1,90 @@
+package io.github.mmatokovic.fiskalizacija.primjeri;
+
+import io.github.mmatokovic.fiskalizacija.Okruzenje;
+import io.github.mmatokovic.fiskalizacija.Potpisivac;
+import io.github.mmatokovic.fiskalizacija.b2b.B2bClient;
+import io.github.mmatokovic.fiskalizacija.b2b.Rezultat;
+import io.github.mmatokovic.fiskalizacija.b2c.B2cClient;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.ZoneId;
+
+/**
+ * Klijent za testno okruženje Porezne uprave iz varijabli okoline {@code FISK_P12}, {@code FISK_P12_LOZINKA} i
+ * {@code FISK_OIB}, kao u {@code B2bTestnoOkruzenjeIT}.
+ */
+final class TestnoOkruzenje {
+
+    private static final String OIB_PRIMJERA = "12345678903";
+
+    private TestnoOkruzenje() {
+    }
+
+    static B2bClient klijent() {
+        return B2bClient.builder(Okruzenje.TEST, potpisivac()).build();
+    }
+
+    static B2cClient b2cKlijent() {
+        return B2cClient.builder(Okruzenje.TEST, potpisivac()).build();
+    }
+
+    /** Poslovni prostor iz {@code FISK_OZN_POS_PR}, otvoren na OIB demo certifikata. */
+    static String oznPosPr() {
+        return varijabla("FISK_OZN_POS_PR");
+    }
+
+    private static Potpisivac potpisivac() {
+        return Potpisivac.izP12(Path.of(varijabla("FISK_P12")), varijabla("FISK_P12_LOZINKA").toCharArray());
+    }
+
+    static String oib() {
+        return varijabla("FISK_OIB");
+    }
+
+    /** eRačun iz datoteke ili, bez nje, {@code primjer-eracun.xml} s OIB-om iz {@code FISK_OIB}, novim brojem i današnjim datumom. */
+    static byte[] eRacun(String[] args) throws IOException {
+        if (args.length > 0) {
+            return Files.readAllBytes(Path.of(args[0]));
+        }
+        LocalDate danas = LocalDate.now(ZoneId.of("Europe/Zagreb"));
+        String broj = (System.currentTimeMillis() % 1_000_000_000L) + "-P1-1";
+        return primjer()
+                .replace(OIB_PRIMJERA, oib())
+                .replace("<cbc:ID>1-P1-1</cbc:ID>", "<cbc:ID>" + broj + "</cbc:ID>")
+                .replaceFirst("<cbc:IssueDate>[^<]+", "<cbc:IssueDate>" + danas)
+                .replaceFirst("<cbc:DueDate>[^<]+", "<cbc:DueDate>" + danas.plusDays(30))
+                .getBytes(StandardCharsets.UTF_8);
+    }
+
+    static String primjer() {
+        try (var in = TestnoOkruzenje.class.getResourceAsStream("/primjer-eracun.xml")) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    static void ispisi(String poruka, Rezultat r) {
+        if (r.prihvacen()) {
+            System.out.println(poruka + ": prihvaćeno, idZahtjeva " + r.idZahtjeva());
+        } else if (r.prihvacenBezProvjerePotpisa()) {
+            System.out.println(poruka + ": prihvaćeno, ali potpis odgovora je " + r.potpisOdgovora());
+        } else {
+            var g = r.greska();
+            System.out.println(poruka + ": odbijeno, " + (g == null ? "bez opisa greške" : g.sifra() + " " + g.opis()));
+        }
+    }
+
+    private static String varijabla(String ime) {
+        String vrijednost = System.getenv(ime);
+        if (vrijednost == null || vrijednost.isBlank()) {
+            throw new IllegalStateException("Postavite varijablu okoline " + ime + " (vidi README, odjeljak Primjeri)");
+        }
+        return vrijednost;
+    }
+}

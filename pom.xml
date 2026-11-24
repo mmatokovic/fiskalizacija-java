@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>dev.mmatokovic.fiskalizacija</groupId>
+    <groupId>io.github.mmatokovic.fiskalizacija</groupId>
     <artifactId>fiskalizacija-parent</artifactId>
     <version>${revision}</version>
     <packaging>pom</packaging>

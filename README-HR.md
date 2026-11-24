@@ -26,13 +26,13 @@ Još nije objavljeno na Maven Centralu. Do tada: `./mvnw install`, pa u projektu
 
 ```xml
 <dependency>
-    <groupId>dev.mmatokovic.fiskalizacija</groupId>
+    <groupId>io.github.mmatokovic.fiskalizacija</groupId>
     <artifactId>fiskalizacija-core</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
 
-Za JPMS projekte: `requires dev.mmatokovic.fiskalizacija;`
+Za JPMS projekte: `requires io.github.mmatokovic.fiskalizacija;`
 
 ## Primjer
 
@@ -128,7 +128,7 @@ Racun racun = UblParser.racun(xml, greske);
 ## Fiskalizacija 1.0 (B2C)
 
 Računi u krajnjoj potrošnji, i B2B računi plaćeni gotovinom ili karticom, fiskaliziraju se s `B2cClient` iz paketa
-`dev.mmatokovic.fiskalizacija.b2c`, prema tehničkoj specifikaciji v2.7 i shemi f73.
+`io.github.mmatokovic.fiskalizacija.b2c`, prema tehničkoj specifikaciji v2.7 i shemi f73.
 
 ```java
 var client = B2cClient.builder(Okruzenje.TEST, potpisivac).build();
@@ -166,7 +166,7 @@ Podržane su sve operacije iz specifikacije:
 
 ```xml
 <dependency>
-    <groupId>dev.mmatokovic.fiskalizacija</groupId>
+    <groupId>io.github.mmatokovic.fiskalizacija</groupId>
     <artifactId>fiskalizacija-spring-boot-starter</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
@@ -242,10 +242,10 @@ ili od informacijskog posrednika. Možda dođe kasnije.
 | `fiskalizacija-spring-boot-starter` | Spring Boot 4 auto-konfiguracija za `B2bClient` i `B2cClient` |
 | `fiskalizacija-examples` | pokretljivi primjeri; ne objavljuje se |
 
-`fiskalizacija-core` je JPMS modul `dev.mmatokovic.fiskalizacija`. Javni API su tri paketa:
-`dev.mmatokovic.fiskalizacija` (zajedničko: `Potpisivac`, `Okruzenje`, `FinaCertifikati`, `Oib`, iznimke),
-`dev.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0: `B2bClient`, `UblParser` i podaci poruka) i
-`dev.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0: `B2cClient`, `Zki`, `QrKod` i podaci poruka); paket `dev.mmatokovic.fiskalizacija.internal` modul ne izvozi i mijenja se bez najave.
+`fiskalizacija-core` je JPMS modul `io.github.mmatokovic.fiskalizacija`. Javni API su tri paketa:
+`io.github.mmatokovic.fiskalizacija` (zajedničko: `Potpisivac`, `Okruzenje`, `FinaCertifikati`, `Oib`, iznimke),
+`io.github.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0: `B2bClient`, `UblParser` i podaci poruka) i
+`io.github.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0: `B2cClient`, `Zki`, `QrKod` i podaci poruka); paket `io.github.mmatokovic.fiskalizacija.internal` modul ne izvozi i mijenja se bez najave.
 Do verzije 1.0.0 javni API se može mijenjati između minor verzija (vidi [CHANGELOG.md](CHANGELOG.md)).
 
 ## Build
@@ -279,7 +279,7 @@ $env:FISK_P12='C:\putanja\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB=
 
 ## Primjeri
 
-`fiskalizacija-examples` sadrži pokretljive programe u paketu `dev.mmatokovic.fiskalizacija.primjeri`:
+`fiskalizacija-examples` sadrži pokretljive programe u paketu `io.github.mmatokovic.fiskalizacija.primjeri`:
 
 | Klasa | Što radi |
 |---|---|
@@ -294,7 +294,7 @@ okruženje iznad.
 
 ```bash
 ./mvnw install -DskipTests
-./mvnw -pl fiskalizacija-examples exec:java -Dexec.mainClass=dev.mmatokovic.fiskalizacija.primjeri.ValidacijaERacuna
+./mvnw -pl fiskalizacija-examples exec:java -Dexec.mainClass=io.github.mmatokovic.fiskalizacija.primjeri.ValidacijaERacuna
 ```
 
 Za doprinos vidi [CONTRIBUTING.md](CONTRIBUTING.md), a za prijavu ranjivosti [SECURITY.md](SECURITY.md) (oboje na engleskom).

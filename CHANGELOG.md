@@ -10,9 +10,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   `EvidentirajIsporukuZaKojuNijeIzdanERacun`.
 - Reading UBL 2.1 eRačun (HR CIUS), XAdES-B request signing, response signature check up to the FINA CA,
   XSD validation before sending.
-- JPMS module `dev.mmatokovic.fiskalizacija` with the shared classes in `dev.mmatokovic.fiskalizacija`, Fiskalizacija 2.0
-  in `dev.mmatokovic.fiskalizacija.b2b` (`B2bClient`) and 1.0 in `dev.mmatokovic.fiskalizacija.b2c` (`B2cClient`); the
-  `dev.mmatokovic.fiskalizacija.internal` packages are not exported.
+- JPMS module `io.github.mmatokovic.fiskalizacija` with the shared classes in `io.github.mmatokovic.fiskalizacija`, Fiskalizacija 2.0
+  in `io.github.mmatokovic.fiskalizacija.b2b` (`B2bClient`) and 1.0 in `io.github.mmatokovic.fiskalizacija.b2c` (`B2cClient`); the
+  `io.github.mmatokovic.fiskalizacija.internal` packages are not exported.
 - `Oib.ispravan` checks an OIB's check digit (ISO 7064, MOD 11,10). `UblParser` reports an invalid OIB of the seller,
   buyer or operator as an error.
 - Integration tests against the Porezna uprava test environment (`B2bTestnoOkruzenjeIT`), skipped unless a demo
@@ -26,7 +26,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   and the HR CIUS rules. `Iznosi.izracunaj` computes line, VAT breakdown and document totals from `StavkaRacuna`
   lines by the EN 16931 rules (VAT per category and rate on the summed base, rounded half up to the cent).
 - `Builder.proxy` for a forward proxy and `Builder.potpisnikOdgovora` to choose which certificate may sign responses.
-- Fiskalizacija 1.0 (B2C) in the `dev.mmatokovic.fiskalizacija.b2c` package, following technical specification v2.7:
+- Fiskalizacija 1.0 (B2C) in the `io.github.mmatokovic.fiskalizacija.b2c` package, following technical specification v2.7:
   `B2cClient` fiscalizes invoices (`racun`, returns the JIR), changes payment data (`promijeniPodatkeRacuna`,
   `promijeniNacPlac`), reports tips (`napojnica`), manages business premises working hours (`prijaviRadnoVrijeme`,
   `obrisiRadnoVrijeme`, `dohvatiRadnoVrijeme`, `prijaviRadnoVrijemeZaPoslovnice`) and supports `provjera` and `echo`.

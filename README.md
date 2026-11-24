@@ -30,13 +30,13 @@ Not yet published to Maven Central. Until then, run `./mvnw install` and add:
 
 ```xml
 <dependency>
-    <groupId>dev.mmatokovic.fiskalizacija</groupId>
+    <groupId>io.github.mmatokovic.fiskalizacija</groupId>
     <artifactId>fiskalizacija-core</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
 
-For JPMS projects: `requires dev.mmatokovic.fiskalizacija;`
+For JPMS projects: `requires io.github.mmatokovic.fiskalizacija;`
 
 ## Example
 
@@ -132,7 +132,7 @@ Racun racun = UblParser.racun(xml, greske);
 ## Fiskalizacija 1.0 (B2C)
 
 Invoices to consumers, and B2B invoices paid in cash or by card, are fiscalized with `B2cClient` in the
-`dev.mmatokovic.fiskalizacija.b2c` package, following technical specification v2.7 and schema f73.
+`io.github.mmatokovic.fiskalizacija.b2c` package, following technical specification v2.7 and schema f73.
 
 ```java
 var client = B2cClient.builder(Okruzenje.TEST, potpisivac).build();
@@ -171,7 +171,7 @@ All operations of the specification are supported:
 
 ```xml
 <dependency>
-    <groupId>dev.mmatokovic.fiskalizacija</groupId>
+    <groupId>io.github.mmatokovic.fiskalizacija</groupId>
     <artifactId>fiskalizacija-spring-boot-starter</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
@@ -247,11 +247,11 @@ have, e.g. from your ERP or information intermediary. This may come later.
 | `fiskalizacija-spring-boot-starter` | Spring Boot 4 auto-configuration of `B2bClient` and `B2cClient` |
 | `fiskalizacija-examples` | runnable examples; not published |
 
-`fiskalizacija-core` is the JPMS module `dev.mmatokovic.fiskalizacija`. The public API is three packages:
-`dev.mmatokovic.fiskalizacija` (shared: `Potpisivac`, `Okruzenje`, `FinaCertifikati`, `Oib`, exceptions),
-`dev.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0: `B2bClient`, `UblParser` and the message data) and
-`dev.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0: `B2cClient`, `Zki`, `QrKod` and the message data). The module does not export
-`dev.mmatokovic.fiskalizacija.internal`, which may change without notice. Before 1.0.0 the public API may change
+`fiskalizacija-core` is the JPMS module `io.github.mmatokovic.fiskalizacija`. The public API is three packages:
+`io.github.mmatokovic.fiskalizacija` (shared: `Potpisivac`, `Okruzenje`, `FinaCertifikati`, `Oib`, exceptions),
+`io.github.mmatokovic.fiskalizacija.b2b` (Fiskalizacija 2.0: `B2bClient`, `UblParser` and the message data) and
+`io.github.mmatokovic.fiskalizacija.b2c` (Fiskalizacija 1.0: `B2cClient`, `Zki`, `QrKod` and the message data). The module does not export
+`io.github.mmatokovic.fiskalizacija.internal`, which may change without notice. Before 1.0.0 the public API may change
 between minor versions (see [CHANGELOG.md](CHANGELOG.md)).
 
 ## Build
@@ -285,7 +285,7 @@ $env:FISK_P12='C:\path\demo.p12'; $env:FISK_P12_LOZINKA='...'; $env:FISK_OIB='..
 
 ## Examples
 
-`fiskalizacija-examples` has runnable programs in `dev.mmatokovic.fiskalizacija.primjeri`:
+`fiskalizacija-examples` has runnable programs in `io.github.mmatokovic.fiskalizacija.primjeri`:
 
 | Class | What it does |
 |---|---|
@@ -300,7 +300,7 @@ test environment above.
 
 ```bash
 ./mvnw install -DskipTests
-./mvnw -pl fiskalizacija-examples exec:java -Dexec.mainClass=dev.mmatokovic.fiskalizacija.primjeri.ValidacijaERacuna
+./mvnw -pl fiskalizacija-examples exec:java -Dexec.mainClass=io.github.mmatokovic.fiskalizacija.primjeri.ValidacijaERacuna
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute and [SECURITY.md](SECURITY.md) to report a vulnerability.

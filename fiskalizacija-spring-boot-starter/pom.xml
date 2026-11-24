@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>dev.mmatokovic.fiskalizacija</groupId>
+        <groupId>io.github.mmatokovic.fiskalizacija</groupId>
         <artifactId>fiskalizacija-parent</artifactId>
         <version>${revision}</version>
     </parent>
@@ -15,7 +15,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>dev.mmatokovic.fiskalizacija</groupId>
+            <groupId>io.github.mmatokovic.fiskalizacija</groupId>
             <artifactId>fiskalizacija-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -86,7 +86,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Automatic-Module-Name>dev.mmatokovic.fiskalizacija.spring</Automatic-Module-Name>
+                            <Automatic-Module-Name>io.github.mmatokovic.fiskalizacija.spring</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
