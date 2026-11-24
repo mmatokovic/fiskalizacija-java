@@ -1,6 +1,7 @@
 # fiskalizacija-java
 
 [![build](https://github.com/mmatokovic/fiskalizacija-java/actions/workflows/build.yml/badge.svg)](https://github.com/mmatokovic/fiskalizacija-java/actions/workflows/build.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mmatokovic.fiskalizacija/fiskalizacija-core)](https://central.sonatype.com/artifact/io.github.mmatokovic.fiskalizacija/fiskalizacija-core)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 ![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)
 
