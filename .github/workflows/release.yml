@@ -38,8 +38,8 @@ jobs:
           java-version: 21
           cache: maven
           server-id: central
-          server-username: CENTRAL_USERNAME
-          server-password: CENTRAL_TOKEN
+          server-username-env-var: CENTRAL_USERNAME
+          server-password-env-var: CENTRAL_TOKEN
       - name: Publish to Maven Central
         run: ./mvnw -B -ntp -Prelease -Drevision="$VERSION" clean deploy
         env:
