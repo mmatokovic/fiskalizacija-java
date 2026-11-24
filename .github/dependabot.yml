@@ -11,6 +11,9 @@ updates:
       test:
         patterns:
           - "org.junit:*"
+    ignore:
+      - dependency-name: "com.helger*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
