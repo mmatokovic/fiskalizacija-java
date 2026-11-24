@@ -21,6 +21,8 @@ eRačun (e-invoices) and eIzvještavanje (e-reporting), and **Fiskalizacija 1.0 
 > Porezna uprava test environment** (see [Open questions](#open-questions)). Tests for the test environment exist,
 > see [Test environment](#test-environment).
 
+Unofficial library, not affiliated with or endorsed by Porezna uprava, FINA or APIS IT.
+
 The API uses the Croatian names from the official specification and XSD schemas (`Racun` = invoice,
 `Naplata` = payment collection, `Odbijanje` = rejection, `Potpisivac` = signer), so it maps one to one to the
 Porezna uprava documentation.

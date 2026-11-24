@@ -21,6 +21,8 @@ eIzvještavanje, i **Fiskalizacija 1.0 (B2C)**, odnosno fiskalizacija računa u 
 > testnog okruženja Porezne uprave** (vidi [Otvorena pitanja](#otvorena-pitanja)). Testovi za testno okruženje
 > postoje, vidi [Testno okruženje](#testno-okruženje).
 
+Neslužbena biblioteka, nije povezana s Poreznom upravom, FINA-om ni APIS IT-om niti je oni odobravaju.
+
 ## Instalacija
 
 S Maven Centrala:
