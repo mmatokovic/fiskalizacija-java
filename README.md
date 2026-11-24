@@ -16,7 +16,7 @@ eRačun (e-invoices) and eIzvještavanje (e-reporting), and **Fiskalizacija 1.0 
 - Validation against the official XSD schemas before sending, OIB check digit when reading UBL
 - **No external dependencies** in `fiskalizacija-core`: only JDK 17+ (`java.xml`, `java.xml.crypto`, `java.net.http`)
 
-> Status: 0.1.0-SNAPSHOT. Tested against the official Porezna uprava examples, **not yet tested against the
+> Status: 0.1.0. Tested against the official Porezna uprava examples, **not yet tested against the
 > Porezna uprava test environment** (see [Open questions](#open-questions)). Tests for the test environment exist,
 > see [Test environment](#test-environment).
 
@@ -26,13 +26,13 @@ Porezna uprava documentation.
 
 ## Installation
 
-Not yet published to Maven Central. Until then, run `./mvnw install` and add:
+From Maven Central:
 
 ```xml
 <dependency>
     <groupId>io.github.mmatokovic.fiskalizacija</groupId>
     <artifactId>fiskalizacija-core</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -173,7 +173,7 @@ All operations of the specification are supported:
 <dependency>
     <groupId>io.github.mmatokovic.fiskalizacija</groupId>
     <artifactId>fiskalizacija-spring-boot-starter</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -228,10 +228,6 @@ The choices below follow the technical specifications; they still need confirmin
 Every taxpayer has a FINA certificate, so a valid chain alone is not enough. The OIB counts only where FINA puts it:
 in organizationIdentifier (`HR02994650199` in `fiskalcistest`) or in serialNumber (`VATHR-18683136487.341` in
 Porezna's TLS certificate), never elsewhere in the subject, part of which the certificate holder chooses.
-
-## Not done yet
-
-- Publishing to Maven Central
 
 ## Out of scope for now
 

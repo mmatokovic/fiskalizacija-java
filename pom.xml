@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
     <name>fiskalizacija-java</name>
-    <description>Java klijent za Fiskalizaciju 2.0: evidentiranje eRačuna i eIzvještavanje</description>
+    <description>Java klijent za Fiskalizaciju 2.0 (eRačun i eIzvještavanje) i Fiskalizaciju 1.0 (računi u krajnjoj potrošnji)</description>
     <url>https://github.com/mmatokovic/fiskalizacija-java</url>
     <inceptionYear>2026</inceptionYear>
     <licenses>

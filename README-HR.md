@@ -16,19 +16,19 @@ eIzvještavanje, i **Fiskalizacija 1.0 (B2C)**, odnosno fiskalizacija računa u 
 - Validacija prema službenim XSD shemama prije slanja, OIB s kontrolnom znamenkom pri čitanju UBL-a
 - **Bez vanjskih ovisnosti** u `fiskalizacija-core`: samo JDK 17+ (`java.xml`, `java.xml.crypto`, `java.net.http`)
 
-> Status: 0.1.0-SNAPSHOT. Testirano na službenim primjerima Porezne uprave, **još nije testirano protiv
+> Status: 0.1.0. Testirano na službenim primjerima Porezne uprave, **još nije testirano protiv
 > testnog okruženja Porezne uprave** (vidi [Otvorena pitanja](#otvorena-pitanja)). Testovi za testno okruženje
 > postoje, vidi [Testno okruženje](#testno-okruženje).
 
 ## Instalacija
 
-Još nije objavljeno na Maven Centralu. Do tada: `./mvnw install`, pa u projektu:
+S Maven Centrala:
 
 ```xml
 <dependency>
     <groupId>io.github.mmatokovic.fiskalizacija</groupId>
     <artifactId>fiskalizacija-core</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -168,7 +168,7 @@ Podržane su sve operacije iz specifikacije:
 <dependency>
     <groupId>io.github.mmatokovic.fiskalizacija</groupId>
     <artifactId>fiskalizacija-spring-boot-starter</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -223,10 +223,6 @@ Ovi izbori prate tehničke specifikacije, ali ih još treba potvrditi na testnom
 Svaki porezni obveznik ima FINA certifikat, pa ispravan lanac sam nije dovoljan. OIB se priznaje samo tamo gdje ga
 FINA upisuje: u organizationIdentifier (`HR02994650199` u `fiskalcistest`) ili u serialNumber
 (`VATHR-18683136487.341` u Poreznom TLS certifikatu), nikad drugdje u subjektu, koji vlasnik certifikata dijelom bira sam.
-
-## Što još nije napravljeno
-
-- Objava na Maven Central
 
 ## Zasad izvan opsega
 
