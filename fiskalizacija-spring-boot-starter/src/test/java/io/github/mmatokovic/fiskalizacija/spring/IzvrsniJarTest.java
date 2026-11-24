@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.loader.net.protocol.Handlers;
 
@@ -24,7 +25,7 @@ class IzvrsniJarTest {
     private static final String XSD = "io.github.mmatokovic.fiskalizacija.internal.xml.Xsd";
 
     @Test
-    void xsdSeUcitavaIzUgnijezdenogJara(@TempDir Path dir) throws Exception {
+    void xsdSeUcitavaIzUgnijezdenogJara(@TempDir(cleanup = CleanupMode.NEVER) Path dir) throws Exception {
         var app = dir.resolve("app.jar");
         try (var out = new JarOutputStream(Files.newOutputStream(app))) {
             byte[] core = core();
